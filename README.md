@@ -6,8 +6,9 @@ This repository is for a quantum computer simulator that can run basic quantum c
 The user can:
 - Create qubits
 - Create classical bits
-- Apply Pauli-X, -Y, -Z single qubit gates
-- Apply Hadamard single qubit gate
+- Apply Pauli-X, -Y, -Z, Hadamard, phase, and pi/8 single qubit gates
+- Apply Controlled-X, -Y, -Z, SWAP two qubit gates
+- Apply Toffoli three qubit gate
 - Keep track of all gates applied, to which qubits, and in what order
 
 ## Notes
