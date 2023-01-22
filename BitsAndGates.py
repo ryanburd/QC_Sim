@@ -108,10 +108,14 @@ class Circuit:
         self.gates.append(['Toff',c_qubit1,c_qubit2,t_qubit])
         return self
 
-test = Circuit(3,3)
-test.X(2)
-test.X(0)
-print(test.qubits)
-test.Toff(2,0,1)
-print(test.qubits)
-print(test.gates)
+def main():
+    test = Circuit(3,3)
+    test.X(2)
+    test.X(0)
+    print(test.qubits)
+    test.Toff(2,0,1)
+    print(test.qubits)
+    print(test.gates)
+
+if __name__ == "__main__":
+    main()
