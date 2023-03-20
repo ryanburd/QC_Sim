@@ -10,6 +10,7 @@ The user can:
 - Apply Controlled-X, -Y, -Z, SWAP two qubit gates
 - Apply Toffoli three qubit gate
 - Keep track of all gates applied, to which qubits, and in what order
+- Measure a qubit and store the result in a classical bit
 
 ## Notes
 This is a personal project of ryanburd.
