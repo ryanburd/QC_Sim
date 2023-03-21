@@ -168,20 +168,20 @@ class Qubit:
     def measure(self, cbit):
         qubit_probabilities = self.state*np.conjugate(self.state)
         if np.random.rand(1) < qubit_probabilities[0]:
-            cbit = 0
+            cbit.state = 0
             self.state = [1, 0]
         else:
-            cbit = 1
+            cbit.state = 1
             self.state = [0, 1]
-        self.gates.append(['M'])
+        self.gates.append('M')
         return self
 
 def main():
     test = Circuit(3,3)
-    test.qubits[0].X()
-    test.qubits[0].X()
+    test.qubits[0].H()
+    test.qubits[0].measure(test.cbits[0])
     test.display_circuit()
-    # test.measure(0,0)
+    test.display_states()
 
 if __name__ == "__main__":
     main()
