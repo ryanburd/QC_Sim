@@ -1,6 +1,7 @@
 # Quantum Computer Simulator
 
 This repository is for a quantum computer simulator that can run basic quantum circuits.
+NOTE: This version is under maintenance to reformat the class structure such that the bits will be treated as class objects for storing the gates applied to each bit.
 
 ## Current status
 The user can:
