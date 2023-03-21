@@ -9,28 +9,38 @@ class Circuit:
     def __init__(self,numQubits,numCbits):
         self.numQubits = numQubits
         self.qubits = []
-        for i in range(numQubits):
+        for qubit in range(numQubits):
             self.qubits.append(Qubit())
-        # self.numCbits = numCbits
-        # self.cbits = []
-        # for cbit in range(numCbits):
-        #     self.cbits.append(Cbit)
+
+        self.numCbits = numCbits
+        self.cbits = []
+        for cbit in range(numCbits):
+            self.cbits.append(Cbit())
     
     # Print the state of all qubits in the command line.
     def display_states(self):
-        for qubit in self.qubits:
-            print(qubit.state)
+        for qubit in range(self.numQubits):
+            print('Q%i:'%qubit, self.qubits[qubit].state)
+
+        for cbit in range(self.numCbits):
+            print('C%i:'%cbit, self.cbits[cbit].state)
         return
 
     # Print the circuit of all applied gates in the command line.
     def display_circuit(self):
-        for gate in self.qubits.gates:
-            print('┌───┐')
-            print('│ %s │'%gate[0])
-            print('└───┘')
+        for qubit in self.qubits:
+            for gate in qubit.gates:
+                print('┌───┐')
+                print('│ %s │'%gate)
+                print('└───┘')
         return
 
-# Creates an instance of a quantum bit, or qubit. The user can apply gates to the qubit, which will be tracked.
+# Creates an instance of a classical bit. The state is initialized to 0.
+class Cbit:
+    def __init__(self):
+        self.state = 0
+
+# Creates an instance of a quantum bit, or qubit. The state is initialized to |0>, [1, 0]. The user can apply gates to the qubit, which will be tracked.
 class Qubit:
 
     def __init__(self):
@@ -168,9 +178,9 @@ class Qubit:
 
 def main():
     test = Circuit(3,3)
-    test.qubits[0].X
-    test.qubits[2].X
-    test.display_states()
+    test.qubits[0].X()
+    test.qubits[0].X()
+    test.display_circuit()
     # test.measure(0,0)
 
 if __name__ == "__main__":
