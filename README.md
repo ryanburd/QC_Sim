@@ -1,6 +1,6 @@
 # Quantum Computer Simulator
 
-This repository is for a quantum computer simulator that can run basic quantum circuits.
+This repository is for a quantum computer simulator that can run basic quantum circuits. This version can only consider pure states since state vectors are used for all calculations. Future updates will use density operators so that mixed states can be considered as well.
 
 ## Current status
 The user can:
