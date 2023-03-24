@@ -24,6 +24,25 @@ proj0matrix = np.array([[1, 0],
 proj1matrix = np.array([[0, 0],
                         [0, 1]])
 
+class Qubit:
+
+    def __init__(self):
+        self.gates = []
+        self.gatePos = []
+        self.connections = []
+        self.connectTo = []
+        self.connectPos = []
+        self.earliestPos = 1
+
+class Cbit:
+
+    def __init__(self, state):
+        self.state = state
+        self.connections = []
+        self.connectTo = []
+        self.connectPos = []
+        self.earliestPos = 1
+
 # Creates an instance of a quantum circuit with a provided number of quantum bits and classical bits and allows the user
 # to apply qubit gates to the circuit
 class Circuit:
@@ -31,21 +50,16 @@ class Circuit:
     # Create the provided number of qubits and classical bits upon instance initialization
     def __init__(self, numQubits, numCbits):
 
-        # Create a list of qubits, each intialized in the |0> state, [1, 0].
-        qubit_list = np.zeros([numQubits, 2], dtype=np.complex_)
-        qubit_list[:, 0] = 1
-        self.qubits = qubit_list
+        # Create a list of qubits. Each instance of the class Qubit will store the gates applied to the qubit. This is useful for creating a diagram of the circuit.
+        self.qubits = [Qubit() for qubit in range(numQubits)]
         
-        # Form the state of all the qubits in the circuit.
+        # Form the state of all the qubits in the circuit. Assume all qubits are initialized in the |0> state, [1, 0]
         self.state = np.array([1])
         for qubit in self.qubits:
-            self.state = np.tensordot(self.state, qubit, axes=0).reshape(len(self.state)*2, 1)
+            self.state = np.tensordot(self.state, [1, 0], axes=0).reshape(len(self.state)*2, 1)
         
         # Create a list of classical bits, each initialized in the 0 state.
-        self.cbits = np.zeros([numCbits, 1], dtype=np.int8)
-
-        # Create a blank list that will store all gates when they are applied to the circuit.
-        self.gates = []
+        self.cbits = [Cbit(0) for cbit in range(numCbits)]
 
     ## SINGLE QUBIT GATES ##
 
@@ -63,8 +77,10 @@ class Circuit:
         # Apply the gate to the circuit's state, updating the state.
         self.state = np.dot(kronMatrix, self.state)
 
-        # Append the gate onto the running list of gates in the circuit.
-        self.gates.append(['X', target])
+        # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        self.qubits[target].gates.append('X')
+        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+        self.qubits[target].earliestPos += 1
 
         return self
 
@@ -341,7 +357,7 @@ class Circuit:
             self.state = state1 / np.sqrt(prob1)
 
         # Append the gate onto the running list of gates in the circuit.
-        self.gates.append(['M', target, cbit])
+        self.gates.append(['M', target, 'O', cbit])
 
         return self
     
@@ -352,13 +368,14 @@ class Circuit:
         fig = plt.figure()
         ax = fig.add_subplot(111)
         plt.rcParams.update({'font.size': 20})
+
+        numGates = len(self.gates)
         numQubits = len(self.qubits)
         numCbits = len(self.cbits)
-        ax.set(xlim=(0, 5), ylim=(-1*(numQubits+numCbits), 1))
+        ax.set(xlim=(0, numGates+1), ylim=(-1*(numQubits+numCbits), 1))
         ax.set_axis_off()
 
         # Display the qubit labels and a horizontal line to represent the wire for each qubit's circuit.
-        numGates = len(self.gates)
         bitLabelPosition = 0.5
         for qIndex, qubit in enumerate(self.qubits):
             ax.annotate('$Q_%s$'%qIndex, xy=(bitLabelPosition, -1*qIndex), va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
@@ -372,33 +389,59 @@ class Circuit:
             ax.plot([bitLabelPosition, numGates], [-1*(cIndex+numQubits)-offset, -1*(cIndex+numQubits)-offset], color='black')
 
         # Display each gate applied to the circuit.
+        earliest_opening = np.ones(numQubits)
+        print(self.gates)
         for gIndex, gate in enumerate(self.gates):
+
+            gateType = gate[0]
             # For plotting, the negative of the qubit number will be used for the gate's y value so that qubit 0 can be at the top with additional qubits descending.
             target = -1*gate[1]
-            gateType = gate[0]
-            gateNumber = gIndex+1
+            # gateNumber = gIndex+1
 
-            # For multi-qubit gates, first plot the control gates. This puts the line connecting the control to the target gate behind the target gate (only needed for visual appeal).
+            # For multi-qubit gates, first plot the connector gates. This puts the line connecting the connector to the target gate behind the target gate (only needed for visual appeal).
             if len(gate) > 2:
                 for index in range(int(len(gate) / 2)):
+
+                    connectorType = gate[index*2]
+                    connector = gate[index*2+1]
+                    
+                    # remove the negative from target when indexing
+                    targetEarliestOpening = earliest_opening[-1*target]
+                    connectorEarliestOpening = earliest_opening[connector]
+                    gatePos = np.max([targetEarliestOpening, connectorEarliestOpening])
+
                     # Each gate function returns the target first, so skip the first gate element.
                     if index == 0:
                         continue
                     # Style control gates with a filled dot and connect it with a line to the target gate position.
-                    if gate[index*2] == 'C':
-                        control = -1*gate[index*2+1]
-                        ax.annotate('•', xy=(gateNumber, target), xytext=(gateNumber, control), va='center', ha='center', bbox=dict(boxstyle='Circle, pad=0', facecolor='black'), arrowprops=dict(arrowstyle="-"))
+                    if connectorType == 'C':
+                        ax.annotate('•', xy=(gatePos, target), xytext=(gatePos, -1*connector), va='center', ha='center', bbox=dict(boxstyle='Circle, pad=0', facecolor='black'), arrowprops=dict(arrowstyle="-"))
+                        # remove the negative from target/connector for range
+                        for qubit in sorted(range(-1*connector, target)):
+                            earliest_opening[qubit] += 1
                     # Style SWAP gates with an X and a line to the swapped qubit's position.
-                    elif gate[index*2] == 'SWAP':
-                        control = -1*gate[index*2+1]
-                        ax.annotate('X', xy=(gateNumber, target), xytext=(gateNumber, control), va='center', ha='center', arrowprops=dict(arrowstyle="-"))
+                    elif connectorType == 'SWAP':
+                        ax.annotate('X', xy=(gatePos, target), xytext=(gatePos, -1*connector), va='center', ha='center', arrowprops=dict(arrowstyle="-"))
+                        # remove the negative from target/connector for range
+                        for qubit in sorted(range(-1*connector, -1*target)):
+                            earliest_opening[qubit] += 1
+                    # Style measurement output locations with an open circle and an arrow pointing from the measured qubit's position.
+                    elif connectorType == 'O':
+                        connector += numQubits
+                        ax.annotate(' ', xy=(gatePos, target), xytext=(gatePos, -1*connector), va='center', ha='center', bbox=dict(boxstyle='Circle, pad=0', facecolor='none'), arrowprops=dict(arrowstyle="<|-", facecolor='black'))
+            else:
+                # remove the negative from target when indexing
+                gatePos = earliest_opening[-1*target]
             
-            # If the target gate is a SWAP, style it with an X.
+            # Plot the target gate. If the target gate is a SWAP, style it with an X.
             if gateType == 'SWAP':
-                ax.annotate('X', xy=(gateNumber, target), va='center', ha='center')
+                ax.annotate('X', xy=(gatePos, target), va='center', ha='center')
             # All other target gates are styled with their gate label in a box.
             else:
-                ax.annotate(gateType, xy=(gateNumber, target), va='center', ha='center', bbox=dict(boxstyle='square', fc='white'))
+                ax.annotate(gateType, xy=(gatePos, target), va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white'))
+            
+            # remove the negative from target when indexing
+            earliest_opening[-1*target] += 1
 
         plt.show()
 
@@ -407,10 +450,10 @@ class Circuit:
 def main():
     numQubits = 3
     test = Circuit(numQubits, numQubits)
-    test.X(0)
+    test.SWAP(0, 2)
     test.H(1)
-    test.SWAP(0, 1)
-    test.Toff(1, 0, 2)
+    test.Toff(2, 0, 1)
+    test.measure(1, 1)
     test.display_circuit()
 
 if __name__ == "__main__":
