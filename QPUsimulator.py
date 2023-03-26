@@ -533,24 +533,7 @@ class Circuit:
         return
 
 def main():
-    numQubits = 3
-    test = Circuit(numQubits, numQubits)
-    test.H(0)
-    test.barrier()
-    test.X(1)
-    test.CZ(0, 2)
-    test.S(1)
-    test.T(0)
-    test.barrier()
-    test.SWAP(1, 2)
-    test.Y(2)
-    test.barrier()
-    test.barrier()
-    test.Z(1)
-    test.measure(0, 0)
-    test.measure(1, 1)
-    test.measure(2, 2)
-    test.display_circuit()
+    return
 
 if __name__ == "__main__":
     main()

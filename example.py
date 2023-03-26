@@ -1,18 +1,3 @@
-# Quantum Computer Simulator
-
-This repository is for a quantum computer simulator that can run quantum circuits created by the user.
-
-The user can:
-- Create quantum circuits consisting of a chosen number of qubits and classical bits (for storing the measurement results of qubits).
-- Apply Pauli-X, -Y, -Z, Hadamard, phase, pi/8, xontrolled-X, -Y, -Z, SWAP, and Toffoli gates to the circuit.
-- Create a diagram of the circuit.
-- Measure the final state of the quantum circuit after measurement in the computational basis.
-
-## Example
-
-An example use of the QPU simulator can be found in example.py. The script is also provided below:
-
-'''
 # Import the QPU simulator which creates the quantum circuit and contains all gate operations. Import matplotlib for making a histogram of the results.
 import QPUsimulator as QPU
 import matplotlib.pyplot as plt
@@ -81,10 +66,3 @@ plt.hist(results)
 plt.title('Histogram of results of %i shots of the quantum circuit'%shots)
 plt.xlabel('Quantum circuit state')
 plt.show()
-'''
-
-## Notes
-Current limitations being addressed in ongoing updates:
-- Only pure states can be considered since the circuit math is completed with state vectors. This will be updated to using density operators to represent the qubits' states so that mixed states can be considered as well.
-- The circuit can only be run once (single shot). This is due to the circuit's state being updated when a gate is applied to the circuit. This will be fixed by only creating a list of gates when gates are applied by the user, and a new run() function will apply the math of all the gates to the circuit at the end, which can be easily looped for multiple shots of the circuit.
-- New gates will be added soon: rotation gates, general U gate, and controlled versions of any single qubit gate with multiple control qubits.
