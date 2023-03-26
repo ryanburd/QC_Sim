@@ -12,7 +12,7 @@ The user can:
 
 An example use of the QPU simulator can be found in example.py. The script is also provided below:
 
-```
+```py
 # Import the QPU simulator which creates the quantum circuit and contains all gate operations. Import matplotlib for making a histogram of the results.
 import QPUsimulator as QPU
 import matplotlib.pyplot as plt
