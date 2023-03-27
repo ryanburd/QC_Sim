@@ -11,7 +11,7 @@ The user can:
 
 ## Tutorial
 
-An tutorial of the QPU simulator can be found in tutorial.py, along with the circuit diagram, tutorial_diagram.png, and the results histogram, tutorial_hist.png. The script is also provided below:
+A tutorial of the QPU simulator can be found in tutorial.py, along with the circuit diagram, tutorial_diagram.png, and the results histogram, tutorial_hist.png. The script is also provided below:
 
 ```py
 # Import the QPU simulator which creates the quantum circuit and contains all gate operations. Import matplotlib for making a histogram of the results.
