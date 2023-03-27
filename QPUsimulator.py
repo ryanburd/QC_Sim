@@ -4,31 +4,55 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# Define common matrices used for gate operations.
-Xmatrix = np.array([[0, 1],
-                    [1, 0]])
-Ymatrix = np.array([[ 0, -1j],
-                    [1j,   0]])
-Zmatrix = np.array([[1,  0],
-                    [0, -1]])
-Hmatrix = 1/np.sqrt(2)*np.array([[1,  1],
-                                 [1, -1]])
-Smatrix = np.array([[1,  0],
-                    [0, 1j]])
-Tmatrix = np.array([[1,                  0],
-                    [0, np.exp(1j*np.pi/4)]])
+# Define common matrices used for gate operations. Since the rotation matrices need to receive angles, these matrices are packaged into a function instead of a dictionary, though this function essential acts as a dictionary.
+def gateMatrix(gateType, angles=[0, 0, 0]):
+    [theta, phi, lambd] = angles
+    if gateType == 'I':
+        return np.eye(2)
+    if gateType == 'X':
+        return np.array([[0, 1],
+                         [1, 0]])
+    if gateType == 'Y':
+        return np.array([[ 0, -1j],
+                         [1j,   0]])
+    if gateType == 'Z':
+        return np.array([[1,  0],
+                         [0, -1]])
+    if gateType == 'H':
+        return 1/np.sqrt(2)*np.array([[1,  1],
+                                      [1, -1]])
+    if gateType == 'S':
+        return np.array([[1,  0],
+                         [0, 1j]])
+    if gateType == 'T':
+        return np.array([[1,                  0],
+                         [0, np.exp(1j*np.pi/4)]])
+    if gateType == 'RX':
+        return np.array([[    np.cos(theta/2), -1j*np.sin(theta/2)],
+                         [-1j*np.sin(theta/2),     np.cos(theta/2)]])
+    if gateType == 'RY':
+        return np.array([[np.cos(theta/2), -1*np.sin(theta/2)],
+                         [np.sin(theta/2),    np.cos(theta/2)]])
+    if gateType == 'RZ':
+        return np.array([[np.exp(-1j*theta/2),                  0],
+                         [                  0, np.exp(1j*theta/2)]])
+    if gateType == 'U':
+        return np.array([[np.cos(theta/2), -1*np.exp(1j*lambd)*np.sin(theta/2)],[np.exp(1j*phi)*np.sin(theta/2), np.exp(1j*(phi+lambd))*np.cos(theta/2)]])
 
-# Projection matrices into the computational basis. Used for constructing controlled-U gates and measurements.
-proj0matrix = np.array([[1, 0],
-                        [0, 0]])
-proj1matrix = np.array([[0, 0],
-                        [0, 1]])
+    # Projection matrices into the computational basis. Used for constructing controlled-U gates and measurements.
+    if gateType == 'P0':
+        return np.array([[1, 0],
+                         [0, 0]])
+    if gateType == 'P1':
+        return np.array([[0, 0],
+                         [0, 1]])
 
 class Qubit:
 
     def __init__(self):
         self.gates = []
         self.gatePos = []
+        self.gateAngles = []
         self.connections = []
         self.connectTo = []
         self.connectPos = []
@@ -48,7 +72,7 @@ class Cbit:
 class Circuit:
 
     # Create the provided number of qubits and classical bits upon instance initialization
-    def __init__(self, numQubits, numCbits):
+    def __init__(self, numQubits):
 
         # Create a list of qubits. Each instance of the class Qubit will store the gates applied to the qubit. This is useful for creating a diagram of the circuit.
         self.qubits = [Qubit() for qubit in range(numQubits)]
@@ -56,336 +80,286 @@ class Circuit:
         # Form the state of all the qubits in the circuit. Assume all qubits are initialized in the |0> state, [1, 0]
         self.state = np.array([1])
         for qubit in self.qubits:
-            self.state = np.tensordot(self.state, [1, 0], axes=0).reshape(len(self.state)*2, 1)
+            self.state = np.tensordot([1, 0], self.state, axes=0).reshape(len(self.state)*2, 1)
         
         # Create a list of classical bits, each initialized in the 0 state.
-        self.cbits = [Cbit(0) for cbit in range(numCbits)]
+        self.cbits = [Cbit(0) for cbit in range(numQubits)]
 
     ## SINGLE QUBIT GATES ##
 
     # Pauli-X gate
-    def X(self,target):
-
-        # Create the Kronecker product matrix defining the gate operation. The target qubit gets an X gate, all other qubits get identity.
-        kronMatrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == target:
-                kronMatrix = np.kron(kronMatrix, Xmatrix)
-            else:
-                kronMatrix = np.kron(kronMatrix, np.eye(2))
-        
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
+    def X(self, target):
 
         # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
         self.qubits[target].gates.append('X')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
         self.qubits[target].earliestPos += 1
 
         return self
 
     # Pauli-Y gate
-    def Y(self,target):
-
-        # Create the Kronecker product matrix defining the gate operation. The target qubit gets a Y gate, all other qubits get identity.
-        kronMatrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == target:
-                kronMatrix = np.kron(kronMatrix, Ymatrix)
-            else:
-                kronMatrix = np.kron(kronMatrix, np.eye(2))
-        
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
+    def Y(self, target):
 
         # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
         self.qubits[target].gates.append('Y')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
         self.qubits[target].earliestPos += 1
 
         return self
 
     # Pauli-Z gate
-    def Z(self,target):
-
-        # Create the Kronecker product matrix defining the gate operation. The target qubit gets a Z gate, all other qubits get identity.
-        kronMatrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == target:
-                kronMatrix = np.kron(kronMatrix, Zmatrix)
-            else:
-                kronMatrix = np.kron(kronMatrix, np.eye(2))
-        
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
+    def Z(self, target):
 
         # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
         self.qubits[target].gates.append('Z')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
         self.qubits[target].earliestPos += 1
 
         return self
     
     # Hadamard gate
-    def H(self,target):
-
-        # Create the Kronecker product matrix defining the gate operation. The target qubit gets an H gate, all other qubits get identity.
-        kronMatrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == target:
-                kronMatrix = np.kron(kronMatrix, Hmatrix)
-            else:
-                kronMatrix = np.kron(kronMatrix, np.eye(2))
-        
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
+    def H(self, target):
 
         # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
         self.qubits[target].gates.append('H')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
         self.qubits[target].earliestPos += 1
 
         return self
     
     # Phase gate
-    def S(self,target):
-
-        # Create the Kronecker product matrix defining the gate operation. The target qubit gets an S gate, all other qubits get identity.
-        kronMatrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == target:
-                kronMatrix = np.kron(kronMatrix, Smatrix)
-            else:
-                kronMatrix = np.kron(kronMatrix, np.eye(2))
-        
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
+    def S(self, target):
 
         # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
         self.qubits[target].gates.append('S')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
         self.qubits[target].earliestPos += 1
 
         return self
     
     # pi/8 gate
-    def T(self,target):
-
-        # Create the Kronecker product matrix defining the gate operation. The target qubit gets a T gate, all other qubits get identity.
-        kronMatrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == target:
-                kronMatrix = np.kron(kronMatrix, Tmatrix)
-            else:
-                kronMatrix = np.kron(kronMatrix, np.eye(2))
-        
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
+    def T(self, target):
 
         # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
         self.qubits[target].gates.append('T')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
         self.qubits[target].earliestPos += 1
 
         return self
     
+    # R_X gate
+    def RX(self, target, theta):
+
+        # Append the gate onto the running list of gates for the target qubit. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        self.qubits[target].gates.append('RX')
+        angles = [theta, None, None]
+        self.qubits[target].gateAngles.append(angles)
+        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+        self.qubits[target].earliestPos += 1
+
+        return self
+    
+    # R_Y gate
+    def RY(self, target, theta):
+
+        # Append the gate onto the running list of gates for the target qubit. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        self.qubits[target].gates.append('RY')
+        angles = [theta, None, None]
+        self.qubits[target].gateAngles.append(angles)
+        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+        self.qubits[target].earliestPos += 1
+
+    # R_Z gate
+    def RZ(self, target, theta):
+
+        # Append the gate onto the running list of gates for the target qubit. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        self.qubits[target].gates.append('RZ')
+        angles = [theta, None, None]
+        self.qubits[target].gateAngles.append(angles)
+        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+        self.qubits[target].earliestPos += 1
+
+    # U gate
+    def U(self, target, theta, phi, lambd):
+
+        # Append the gate onto the running list of gates for the target qubit. gateAngles stores lists of angles, so place the angles in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        self.qubits[target].gates.append('U')
+        angles = [theta, phi, lambd]
+        self.qubits[target].gateAngles.append(angles)
+        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+        self.qubits[target].earliestPos += 1
+
     ## TWO QUBIT GATES ##
 
     # Controlled-X gate
     def CX(self, control, target):
 
-        # Create the Kronecker product matrix defining the gate operation. First create separate matrices for projecting the control qubit into the 0 or 1 state. For the projection into the 1 state, the target qubit gets an X gate. All other qubits, including the target in the projection into the 0 state for the control, get an identity. Then add the two matrices together.
-        kron0Matrix = np.array([1])
-        kron1Matrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == control:
-                kron0Matrix = np.kron(kron0Matrix, proj0matrix)
-                kron1Matrix = np.kron(kron1Matrix, proj1matrix)
-            elif qIndex == target:
-                kron0Matrix = np.kron(kron0Matrix, np.eye(2))
-                kron1Matrix = np.kron(kron1Matrix, Xmatrix)
-            else:
-                kron0Matrix = np.kron(kron0Matrix, np.eye(2))
-                kron1Matrix = np.kron(kron1Matrix, np.eye(2))
-        kronMatrix = kron0Matrix + kron1Matrix
-
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
-
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('X')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[control].connections.append('C')
         self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits between the target and control (inclusive).
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
         self.qubits[control].connectPos.append(position)
-        for idx in range(min(control, target), max(control, target)+1):
-            self.qubits[idx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
     
     # Controlled-Y gate
     def CY(self, control, target):
 
-        # Create the Kronecker product matrix defining the gate operation. First create separate matrices for projecting the control qubit into the 0 or 1 state. For the projection into the 1 state, the target qubit gets a Y gate. All other qubits, including the target in the projection into the 0 state for the control, get an identity. Then add the two matrices together.
-        kron0Matrix = np.array([1])
-        kron1Matrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == control:
-                kron0Matrix = np.kron(kron0Matrix, proj0matrix)
-                kron1Matrix = np.kron(kron1Matrix, proj1matrix)
-            elif qIndex == target:
-                kron0Matrix = np.kron(kron0Matrix, np.eye(2))
-                kron1Matrix = np.kron(kron1Matrix, Ymatrix)
-            else:
-                kron0Matrix = np.kron(kron0Matrix, np.eye(2))
-                kron1Matrix = np.kron(kron1Matrix, np.eye(2))
-        kronMatrix = kron0Matrix + kron1Matrix
-
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
-
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('Y')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[control].connections.append('C')
         self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits between the target and control (inclusive).
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
         self.qubits[control].connectPos.append(position)
-        for idx in range(min(control, target), max(control, target)+1):
-            self.qubits[idx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
     
     # Controlled-Z gate
     def CZ(self, control, target):
 
-        # Create the Kronecker product matrix defining the gate operation. First create separate matrices for projecting the control qubit into the 0 or 1 state. For the projection into the 1 state, the target qubit gets a Z gate. All other qubits, including the target in the projection into the 0 state for the control, get an identity. Then add the two matrices together.
-        kron0Matrix = np.array([1])
-        kron1Matrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == control:
-                kron0Matrix = np.kron(kron0Matrix, proj0matrix)
-                kron1Matrix = np.kron(kron1Matrix, proj1matrix)
-            elif qIndex == target:
-                kron0Matrix = np.kron(kron0Matrix, np.eye(2))
-                kron1Matrix = np.kron(kron1Matrix, Zmatrix)
-            else:
-                kron0Matrix = np.kron(kron0Matrix, np.eye(2))
-                kron1Matrix = np.kron(kron1Matrix, np.eye(2))
-        kronMatrix = kron0Matrix + kron1Matrix
-
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
-
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('Z')
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
         self.qubits[control].connections.append('C')
         self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits between the target and control (inclusive).
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
         self.qubits[control].connectPos.append(position)
-        for idx in range(min(control, target), max(control, target)+1):
-            self.qubits[idx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
     
+    # Controlled-RX gate
+    def CRX(self, control, target, theta):
+
+        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        self.qubits[target].gates.append('RX')
+        angles = [theta, None, None]
+        self.qubits[target].gateAngles.append(angles)
+        self.qubits[control].connections.append('C')
+        self.qubits[control].connectTo.append(target)
+
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        position = max(earliestPositions)
+        self.qubits[target].gatePos.append(position)
+        self.qubits[control].connectPos.append(position)
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
+
+        return self
+
+        # Controlled-RY gate
+    def CRY(self, control, target, theta):
+
+        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        self.qubits[target].gates.append('RY')
+        angles = [theta, None, None]
+        self.qubits[target].gateAngles.append(angles)
+        self.qubits[control].connections.append('C')
+        self.qubits[control].connectTo.append(target)
+
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        position = max(earliestPositions)
+        self.qubits[target].gatePos.append(position)
+        self.qubits[control].connectPos.append(position)
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
+
+        return self
+
+    # Controlled-RZ gate
+    def CRZ(self, control, target, theta):
+
+        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        self.qubits[target].gates.append('RZ')
+        angles = [theta, None, None]
+        self.qubits[target].gateAngles.append(angles)
+        self.qubits[control].connections.append('C')
+        self.qubits[control].connectTo.append(target)
+
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        position = max(earliestPositions)
+        self.qubits[target].gatePos.append(position)
+        self.qubits[control].connectPos.append(position)
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
+
+        return self
+
+        # Controlled-U gate
+    def CU(self, control, target, theta, phi, lambd):
+
+        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        self.qubits[target].gates.append('U')
+        angles = [theta, phi, lambd]
+        self.qubits[target].gateAngles.append(angles)
+        self.qubits[control].connections.append('C')
+        self.qubits[control].connectTo.append(target)
+
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        position = max(earliestPositions)
+        self.qubits[target].gatePos.append(position)
+        self.qubits[control].connectPos.append(position)
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
+
+        return self
+
     # SWAP gate
     def SWAP(self, target1, target2):
 
-        # Create the Kronecker product matrix defining the gate operation. First create 3 separate matrices for the two target qubits to receive X, Y, and Z gates together. All other qubits get an identity. Then add the 3 matrices along with an identity and divide the sum by 2.
-        kronXMatrix = np.array([1])
-        kronYMatrix = np.array([1])
-        kronZMatrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == target1 or qIndex == target2:
-                kronXMatrix = np.kron(kronXMatrix, Xmatrix)
-                kronYMatrix = np.kron(kronYMatrix, Ymatrix)
-                kronZMatrix = np.kron(kronZMatrix, Zmatrix)
-            else:
-                kronXMatrix = np.kron(kronXMatrix, np.eye(2))
-                kronYMatrix = np.kron(kronYMatrix, np.eye(2))
-                kronZMatrix = np.kron(kronZMatrix, np.eye(2))
-        kronMatrix = 0.5*(np.eye(np.size(kronXMatrix, 0)) + kronXMatrix + kronYMatrix + kronZMatrix)
-
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
-
         # Append the gate onto the running list of gates for the target qubit (which we'll use target2 as for consistency with controlled gates). Append the connection type onto the running list of connections for the control qubit (target1) and which qubit it is controlling (target2).
         self.qubits[target2].gates.append('SWAP')
+        angles = [None, None, None]
+        self.qubits[target2].gateAngles.append(angles)
         self.qubits[target1].connections.append('SWAP')
         self.qubits[target1].connectTo.append(target2)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the targets (inclusive). The max of this list will be used for the gate position for both targets. Then increase the earliest position for all qubits between the targets (inclusive).
+        # Get the earliest possible gate position within the circuit for each qubit between the targets (inclusive). The max of this list will be used for the gate position for both targets. Then increase the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(target1, target2), max(target1, target2)+1)]
         position = max(earliestPositions)
         self.qubits[target2].gatePos.append(position)
         self.qubits[target1].connectPos.append(position)
-        for idx in range(min(target1, target2), max(target1, target2)+1):
-            self.qubits[idx].earliestPos = position + 1
-
-        return self
-    
-    ## THREE QUBIT GATES ##
-
-    # Toffoli gate
-    def Toff(self, control1, control2, target):
-
-        # Create the Kronecker product matrix defining the gate operation. First create 4 separate matrices for the 4 possible projection combos of the 2 control qubits. Apply the appropriate projection matrix for each control qubit for each of the 4 matrices. The target only gets an X gate when both controls are projected into the 1 state; the target gets an identity otherwise. All other qubits get an identity. Then add the 4 matrices together.
-        kron00Matrix = np.array([1])
-        kron01Matrix = np.array([1])
-        kron10Matrix = np.array([1])
-        kron11Matrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == control1:
-                kron00Matrix = np.kron(kron00Matrix, proj0matrix)
-                kron01Matrix = np.kron(kron01Matrix, proj0matrix)
-                kron10Matrix = np.kron(kron10Matrix, proj1matrix)
-                kron11Matrix = np.kron(kron11Matrix, proj1matrix)
-            elif qIndex == control2:
-                kron00Matrix = np.kron(kron00Matrix, proj0matrix)
-                kron01Matrix = np.kron(kron01Matrix, proj1matrix)
-                kron10Matrix = np.kron(kron10Matrix, proj0matrix)
-                kron11Matrix = np.kron(kron11Matrix, proj1matrix)
-            elif qIndex == target:
-                kron00Matrix = np.kron(kron00Matrix, np.eye(2))
-                kron01Matrix = np.kron(kron01Matrix, np.eye(2))
-                kron10Matrix = np.kron(kron10Matrix, np.eye(2))
-                kron11Matrix = np.kron(kron11Matrix, Xmatrix)
-            else:
-                kron00Matrix = np.kron(kron00Matrix, np.eye(2))
-                kron01Matrix = np.kron(kron01Matrix, np.eye(2))
-                kron10Matrix = np.kron(kron10Matrix, np.eye(2))
-                kron11Matrix = np.kron(kron11Matrix, np.eye(2))
-        kronMatrix = kron00Matrix + kron01Matrix + kron10Matrix + kron11Matrix
-
-        # Apply the gate to the circuit's state, updating the state.
-        self.state = np.dot(kronMatrix, self.state)
-
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running lists of connections for the control qubits and which qubit they are controlling (the target).
-        self.qubits[target].gates.append('X')
-        self.qubits[control1].connections.append('C')
-        self.qubits[control1].connectTo.append(target)
-        self.qubits[control2].connections.append('C')
-        self.qubits[control2].connectTo.append(target)
-
-        # Get the earliest possible gate position within the circuit for each qubit between the target and controls (inclusive). The max of this list will be used for the gate position for both the target and controls. Then increase the earliest position for all qubits between the target and controls (inclusive).
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control1, control2, target), max(control1, control2, target)+1)]
-        position = max(earliestPositions)
-        self.qubits[target].gatePos.append(position)
-        self.qubits[control1].connectPos.append(position)
-        self.qubits[control2].connectPos.append(position)
-        for idx in range(min(control1, control2, target), max(control1, control2, target)+1):
-            self.qubits[idx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
     
@@ -396,6 +370,8 @@ class Circuit:
 
         # Append a barrier to the first qubit. Use the last qubit as the connector to extend the barrier across the entire circuit. The max earliest position for all qubits is the position of the barrier. All qubits' earliest position is then updated to the position after the barrier.
         self.qubits[0].gates.append('B')
+        angles = [None, None, None]
+        self.qubits[0].gateAngles.append(angles)
         self.qubits[-1].connections.append('B')
         self.qubits[-1].connectTo.append(0)
         earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
@@ -405,64 +381,56 @@ class Circuit:
             qubit.earliestPos = earliestPosition + 1
 
     # Measure a qubit and store the result in a classical bit. This is a measurement in the computational basis (projection into the 0 or 1 state).
-    def measure(self, target, output):
-
-        # Create 2 Kronecker product matrices for the projection of the target qubit into the 0 or 1 state. All other qubits get an identity.
-        kron0Matrix = np.array([1])
-        kron1Matrix = np.array([1])
-        for qIndex, qubit in enumerate(self.qubits):
-            if qIndex == target:
-                kron0Matrix = np.kron(kron0Matrix, proj0matrix)
-                kron1Matrix = np.kron(kron1Matrix, proj1matrix)
-            else:
-                kron0Matrix = np.kron(kron0Matrix, np.eye(2))
-                kron1Matrix = np.kron(kron1Matrix, np.eye(2))
-        
-        # For each of the 0 and 1 state projection matrices, apply the projection to the circuit's current state to get the resulting state. Transpose the circuit's current state (without the projection) and apply it to the resulting state (with the projection) to get the probability of the measurement outcome.
-        state0 = np.dot(kron0Matrix, self.state)
-        prob0 = np.dot(self.state.T, state0)[0][0]
-        state1 = np.dot(kron1Matrix, self.state)
-        prob1 = np.dot(self.state.T, state1)[0][0]
-        
-        # Generate a random number between 0 and 1. If it is less than the probability of the target qubit being in the 0 state, set the classical bit to 0 and update the circuit's state with the projection-into-0 state from above (normalized with the square root of the probability of measuring 0). Otherwise, set the classical bit to 1 and update the circuit's state with the projection-into-1 state (normalized).
-        if np.random.rand(1) < prob0:
-            self.cbits[output].state = 0
-            self.state = state0 / np.sqrt(prob0)
-        else:
-            self.cbits[output].state = 1
-            self.state = state1 / np.sqrt(prob1)
+    def measure(self, target):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('M')
-        self.cbits[output].connections.append('O')
-        self.cbits[output].connectTo.append(target)
+        angles = [None, None, None]
+        self.qubits[target].gateAngles.append(angles)
+        self.cbits[target].connections.append('O')
+        self.cbits[target].connectTo.append(target)
 
         # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits between the target and control (inclusive).
         earliestPositions = [qubit.earliestPos for qubit in self.qubits[target:]]
-        for cbit in self.cbits[:output]:
+        for cbit in self.cbits[:target]:
             earliestPositions.append(cbit.earliestPos)
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
-        self.cbits[output].connectPos.append(position)
-        for qubit in self.qubits[target:]:
+        self.cbits[target].connectPos.append(position)
+        for qubit in self.qubits:
             qubit.earliestPos = position + 1
-        for cbit in self.cbits[:output]:
+        for cbit in self.cbits:
             cbit.earliestPos = position + 1
 
         return self
     
     # Assign the gate label, box, and connection property to be used for displaying the circuit
-    def format_gate(self, gate):
+    def format_gate(self, gate, angles=[0, 0, 0]):
+        # Rotation gates
+        if gate in {'RX', 'RY', 'RZ'}:
+            [theta, phi, lambd] = angles
+            letters = list(gate)
+            gateLabel = '$%s_%s$\n(%s)'%(letters[0], letters[1], str(round(theta, 2)))
+            size = 10
+            bbox=dict(boxstyle='square', facecolor='white')
+            arrowprops=dict()
+        # U gates
+        elif gate == 'U':
+            [theta, phi, lambd] = angles
+            gateLabel = '%s\n(%s,%s,%s)'%(gate, str(round(theta, 2)), str(round(phi, 2)), str(round(lambd, 2)))
+            size = 10
+            bbox=dict(boxstyle='square', facecolor='white')
+            arrowprops=dict()
         # SWAP gates
-        if gate == 'SWAP':
+        elif gate == 'SWAP':
             gateLabel = 'x'
-            size = 30
+            size = 25
             bbox=dict(boxstyle='square', pad=0, facecolor='none', edgecolor='none')
             arrowprops=dict(arrowstyle="-", edgecolor='black', linewidth=2)
         # Controls in controlled-gates
         elif gate == 'C':
             gateLabel = ' '
-            size = 7
+            size = 5
             bbox=dict(boxstyle='circle', facecolor='black', edgecolor='black')
             arrowprops=dict(arrowstyle="-", edgecolor='black', linewidth=2)
         # Output in measurement gates
@@ -473,12 +441,12 @@ class Circuit:
             arrowprops=dict(arrowstyle="<|-", edgecolor='black', linewidth=2)
         elif gate == 'B':
             gateLabel = ' '
-            size = 20
+            size = 10
             bbox=dict(boxstyle='square', facecolor='gray', edgecolor='none')
-            arrowprops=dict(arrowstyle="-", edgecolor='grey', linewidth=18)
+            arrowprops=dict(arrowstyle="-", edgecolor='grey', linewidth=9)
         else:
             gateLabel = gate
-            size = 20
+            size = 15
             bbox=dict(boxstyle='square', facecolor='white')
             arrowprops=dict()
         
@@ -487,13 +455,23 @@ class Circuit:
     # Create a figure of the circuit.
     def display_circuit(self):
 
-        # Create the figure and set some style parameters.
+        # Create the figure
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        circuitLength = max([qubit.gatePos[-1] for qubit in self.qubits])
+
+        # Get the circuit length
+        circuitLength = 0
+        for qubit in self.qubits:
+            if len(qubit.gates) > 0:
+                lastPos = qubit.gatePos[-1]
+                if lastPos > circuitLength:
+                    circuitLength = lastPos
+
+        # Set some style parameters
         numQubits = len(self.qubits)
         numCbits = len(self.cbits)
-        bitLabelPosition = 0.5
+        bitLabelPosition = 0
+        bitLabelFontSize = 15
         ax.set(xlim=(0, circuitLength+1), ylim=(-1*(numQubits+numCbits), 1))
         ax.set_axis_off()
 
@@ -501,7 +479,7 @@ class Circuit:
         offset = 0.05
         for Bidx, cbit in enumerate(self.cbits):
             # Display the classical bit labels and a double line to represent their wires. "offset" creates a small spacing between the two plotted lines for each bit to give the double line visual.
-            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+numQubits)), size=20, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
+            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
             ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+numQubits)+offset, -1*(Bidx+numQubits)+offset], color='black')
             ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+numQubits)-offset, -1*(Bidx+numQubits)-offset], color='black')
 
@@ -513,7 +491,7 @@ class Circuit:
         # Display each qubit
         for Qidx, qubit in enumerate(self.qubits):
             # Display the qubit labels and a horizontal line to represent the wire for each qubit's circuit.
-            ax.annotate('$Q_%s$'%Qidx, xy=(bitLabelPosition, -1*Qidx), size=20, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
+            ax.annotate('$Q_%s$'%Qidx, xy=(bitLabelPosition, -1*Qidx), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
             ax.plot([bitLabelPosition, circuitLength], [-1*Qidx, -1*Qidx], color='black')
 
         # Display each qubit connection using the properties from format_gate. These are displayed next for proper layer ordering of connections between qubits.
@@ -525,12 +503,151 @@ class Circuit:
         # Display each qubit gate using the properties from format_gate.
         for Qidx, qubit in enumerate(self.qubits):
             for Gidx, gate in enumerate(qubit.gates):
-                [gateLabel, size, bbox, arrowprops] = self.format_gate(gate)
+                if gate in {'RX', 'RY', 'RZ', 'U'}:
+                    angles = qubit.gateAngles[Gidx]
+                    [gateLabel, size, bbox, arrowprops] = self.format_gate(gate, angles)
+                else:
+                    [gateLabel, size, bbox, arrowprops] = self.format_gate(gate)
                 ax.annotate(gateLabel, xy=(qubit.gatePos[Gidx], -1*Qidx), size=size, va='center', ha='center', bbox=bbox)
 
         plt.show()
 
         return
+    
+    def run(self, shots, hist=False):
+
+        # Get the circuit length
+        circuitLength = 0
+        for qubit in self.qubits:
+            if len(qubit.gates) > 0:
+                lastPos = qubit.gatePos[-1]
+                if lastPos > circuitLength:
+                    circuitLength = lastPos
+
+        # For the gates, create a matrix of I's with circuitLength rows and numQubits columns. Update the matrix with the gates and connections applied to each qubit, placing the gate in the corresponding qubit's column and the row of the circuit position where the gate/connection is applied. Do the same for the angles of each gate (only non-empty lists for rotation matrices)
+        qubit_gates = [['I' for qubit in self.qubits] for pos in range(circuitLength)]
+        gate_angles = [[[] for qubit in self.qubits] for pos in range(circuitLength)]
+        for Qidx, qubit in enumerate(self.qubits):
+            for Gidx, gate in enumerate(qubit.gates):
+                # Subtract 1 since plotted gate positions start at 1 but Python indexing starts at 0
+                gatePos = qubit.gatePos[Gidx] - 1
+                qubit_gates[gatePos][Qidx] = gate
+                gate_angles[gatePos][Qidx] = qubit.gateAngles[Gidx]
+            for Cidx, connection in enumerate(qubit.connections):
+                # Subtract 1 since plotted gate positions start at 1 but Python indexing starts at 0
+                connectPos = qubit.connectPos[Cidx] - 1
+                qubit_gates[connectPos][Qidx] = connection
+        
+        # Create an empty list of results with size equal to the total number of shots. Repeat the circuit's gates applications and measurements for each shot, storing the result from each shot in the list 'results'
+        results = ['']*shots
+        for shot in range(shots):
+            for pos in range(circuitLength):
+
+                # Get the next circuit position's list of gates
+                gates = qubit_gates[pos]
+
+                # Skip over barriers since they do not change the circuit's state
+                if gates[0] == 'B':
+                    continue
+
+                # For controlled gates:
+                if 'C' in gates:
+                    # Create the Kronecker product matrix defining the gate operations. First create separate matrices for projecting the control qubit into the 0 or 1 state. For the projection into the 1 state, the target qubit gets its gate. All other qubits, including the target in the projection into the 0 state for the control, get an identity. Then add the two matrices together.
+                    kron0Matrix = np.array([1])
+                    kron1Matrix = np.array([1])
+                    for Qidx, qubit in enumerate(self.qubits):
+                        gateType = gates[Qidx]
+                        angles = gate_angles[pos][Qidx]
+                        if gateType == 'C':
+                            kron0Matrix = np.kron(gateMatrix('P0'), kron0Matrix)
+                            kron1Matrix = np.kron(gateMatrix('P1'), kron1Matrix)
+                        elif gateType != 'I':
+                            kron0Matrix = np.kron(gateMatrix('I'), kron0Matrix)
+                            kron1Matrix = np.kron(gateMatrix(gateType, angles), kron1Matrix)
+                        else: # gateType == 'I'
+                            kron0Matrix = np.kron(gateMatrix('I'), kron0Matrix)
+                            kron1Matrix = np.kron(gateMatrix('I'), kron1Matrix)
+                    kronMatrix = kron0Matrix + kron1Matrix
+                
+                # For SWAP gates:
+                elif 'SWAP' in gates:
+                    # Create the Kronecker product matrix defining the gate operations. First create 3 separate matrices for the two target qubits to receive X, Y, and Z gates together. All other qubits get an identity. Then add the 3 matrices along with an identity and divide the sum by 2.
+                    kronXMatrix = np.array([1])
+                    kronYMatrix = np.array([1])
+                    kronZMatrix = np.array([1])
+                    for Qidx, qubit in enumerate(self.qubits):
+                        gateType = gates[Qidx]
+                        if gateType == 'SWAP':
+                            kronXMatrix = np.kron(gateMatrix('X'), kronXMatrix)
+                            kronYMatrix = np.kron(gateMatrix('Y'), kronYMatrix)
+                            kronZMatrix = np.kron(gateMatrix('Z'), kronZMatrix)
+                        else: # gateType == 'I'
+                            kronXMatrix = np.kron(gateMatrix('I'), kronXMatrix)
+                            kronYMatrix = np.kron(gateMatrix('I'), kronYMatrix)
+                            kronZMatrix = np.kron(gateMatrix('I'), kronZMatrix)
+                    kronMatrix = 0.5*(np.eye(np.size(kronXMatrix, 0)) + kronXMatrix + kronYMatrix + kronZMatrix)
+                
+                # For measurements (in computational basis):
+                elif 'M' in gates:
+                    # Create 2 Kronecker product matrices for the projection of the target qubit into the 0 or 1 state. All other qubits get an identity.
+                    kron0Matrix = np.array([1])
+                    kron1Matrix = np.array([1])
+                    measuredQubit = 0
+                    for Qidx, qubit in enumerate(self.qubits):
+                        gateType = gates[Qidx]
+                        if gateType == 'M':
+                            kron0Matrix = np.kron(gateMatrix('P0'), kron0Matrix)
+                            kron1Matrix = np.kron(gateMatrix('P1'), kron1Matrix)
+                            measuredQubit = Qidx
+                        else: # gateType == 'I'
+                            kron0Matrix = np.kron(gateMatrix('I'), kron0Matrix)
+                            kron1Matrix = np.kron(gateMatrix('I'), kron1Matrix)
+                    
+                    # For each of the 0 and 1 state projection matrices, apply the projection to the circuit's current state to get the resulting state. Transpose the circuit's current state (without the projection) and apply it to the resulting state (with the projection) to get the probability of the measurement outcome.
+                    state0 = np.dot(kron0Matrix, self.state)
+                    prob0 = np.dot(self.state.T, state0)[0][0]
+                    state1 = np.dot(kron1Matrix, self.state)
+                    prob1 = np.dot(self.state.T, state1)[0][0]
+                    
+                    # Generate a random number between 0 and 1. If it is less than the probability of the target qubit being in the 0 state, set the classical bit to 0 and update the circuit's state with the projection-into-0 state from above (normalized with the square root of the probability of measuring 0). Otherwise, set the classical bit to 1 and update the circuit's state with the projection-into-1 state (normalized).
+                    if np.random.rand(1) < prob0:
+                        self.cbits[measuredQubit].state = 0
+                        self.state = state0 / np.sqrt(prob0)
+                    else:
+                        self.cbits[measuredQubit].state = 1
+                        self.state = state1 / np.sqrt(prob1)
+
+                # For single qubit gates:
+                else:
+                    #  Create the Kronecker product matrix defining the gate operations.
+                    kronMatrix = np.array([1])
+                    for Qidx, qubit in enumerate(self.qubits):
+                        gateType = gates[Qidx]
+                        if gateType in {'RX', 'RY', 'RZ', 'U'}:
+                            angles = gate_angles[pos][Qidx]
+                            kronMatrix = np.kron(gateMatrix(gateType, angles), kronMatrix)
+                        else:
+                            kronMatrix = np.kron(gateMatrix(gateType), kronMatrix)
+                
+                # The measurement operation above changes the circuit's state with the elif statement. If the current circuit position does not contain a measurement, apply the gates to the circuit's state, updating the state.
+                if 'M' not in gates:
+                    self.state = np.dot(kronMatrix, self.state)
+
+            result = ''.join(reversed([str(cbit.state) for cbit in self.cbits]))
+            # Reverse the bit order so bit 0 is on the far right
+            result = '|' + result + '>'
+            results[shot] = result
+
+        if hist:
+            labels, counts = np.unique(results, return_counts=True)
+            plt.bar(labels, counts/shots, align='center')
+            plt.title('Histogram of results of %i shots of the quantum circuit'%shots)
+            plt.xlabel('Quantum circuit state')
+            plt.gca().set_xticks(labels)
+            plt.ylabel('Probability')
+            plt.show()
+
+        return results
 
 def main():
     return
