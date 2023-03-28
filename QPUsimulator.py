@@ -1,8 +1,8 @@
-## This file allows the user to create a quantum circuit with a provided number of qubits and classical bits.
-## Common qubit gates to operate on the quantum circuit are defined.
+## This file allows the user to create a quantum circuit, apply common qubit gates, and collect the measurement result of the circuit with many shots. A diagram of the circuit can be created.
 
 import numpy as np
 import matplotlib.pyplot as plt
+from itertools import product as CartesianProduct
 
 # Define common matrices used for gate operations. Since the rotation matrices need to receive angles, these matrices are packaged into a function instead of a dictionary, though this function essential acts as a dictionary.
 def gateMatrix(gateType, angles=[0, 0, 0]):
@@ -47,6 +47,7 @@ def gateMatrix(gateType, angles=[0, 0, 0]):
         return np.array([[0, 0],
                          [0, 1]])
 
+# Creates a qubit object, which stores all gates applied to the qubit and all connections the qubit is a part of (e.g. as a control for another target qubit's gate).
 class Qubit:
 
     def __init__(self):
@@ -58,6 +59,7 @@ class Qubit:
         self.connectPos = []
         self.earliestPos = 1
 
+# Creates a classical bit object, which stores the bit's state (0 or 1) and all connections the bit is a part of (e.g. as storage for the result of measurement on a qubit).
 class Cbit:
 
     def __init__(self, state):
@@ -84,6 +86,8 @@ class Circuit:
         
         # Create a list of classical bits, each initialized in the 0 state.
         self.cbits = [Cbit(0) for cbit in range(numQubits)]
+
+    ## Gate functions below add their respective gates to the ongoing list of gates defined for each qubit. When running the circuit with run(), the gate lists are collected and applied to the circuit's initial state vector.
 
     ## SINGLE QUBIT GATES ##
 
@@ -204,140 +208,154 @@ class Circuit:
     ## TWO QUBIT GATES ##
 
     # Controlled-X gate
-    def CX(self, control, target):
+    def CX(self, controls, target):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('X')
         angles = [None, None, None]
         self.qubits[target].gateAngles.append(angles)
-        self.qubits[control].connections.append('C')
-        self.qubits[control].connectTo.append(target)
+        for control in controls:
+            self.qubits[control].connections.append('C')
+            self.qubits[control].connectTo.append(target)
 
         # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
-        self.qubits[control].connectPos.append(position)
+        for control in controls:
+            self.qubits[control].connectPos.append(position)
         for qubit in self.qubits:
             qubit.earliestPos = position + 1
 
         return self
     
     # Controlled-Y gate
-    def CY(self, control, target):
+    def CY(self, controls, target):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('Y')
         angles = [None, None, None]
         self.qubits[target].gateAngles.append(angles)
-        self.qubits[control].connections.append('C')
-        self.qubits[control].connectTo.append(target)
+        for control in controls:
+            self.qubits[control].connections.append('C')
+            self.qubits[control].connectTo.append(target)
 
         # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
-        self.qubits[control].connectPos.append(position)
+        for control in controls:
+            self.qubits[control].connectPos.append(position)
         for qubit in self.qubits:
             qubit.earliestPos = position + 1
 
         return self
     
     # Controlled-Z gate
-    def CZ(self, control, target):
+    def CZ(self, controls, target):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('Z')
         angles = [None, None, None]
         self.qubits[target].gateAngles.append(angles)
-        self.qubits[control].connections.append('C')
-        self.qubits[control].connectTo.append(target)
+        for control in controls:
+            self.qubits[control].connections.append('C')
+            self.qubits[control].connectTo.append(target)
 
         # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
-        self.qubits[control].connectPos.append(position)
+        for control in controls:
+            self.qubits[control].connectPos.append(position)
         for qubit in self.qubits:
             qubit.earliestPos = position + 1
 
         return self
     
     # Controlled-RX gate
-    def CRX(self, control, target, theta):
+    def CRX(self, controls, target, theta):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('RX')
         angles = [theta, None, None]
         self.qubits[target].gateAngles.append(angles)
-        self.qubits[control].connections.append('C')
-        self.qubits[control].connectTo.append(target)
+        for control in controls:
+            self.qubits[control].connections.append('C')
+            self.qubits[control].connectTo.append(target)
 
         # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
-        self.qubits[control].connectPos.append(position)
+        for control in controls:
+            self.qubits[control].connectPos.append(position)
         for qubit in self.qubits:
             qubit.earliestPos = position + 1
 
         return self
 
         # Controlled-RY gate
-    def CRY(self, control, target, theta):
+    def CRY(self, controls, target, theta):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('RY')
         angles = [theta, None, None]
         self.qubits[target].gateAngles.append(angles)
-        self.qubits[control].connections.append('C')
-        self.qubits[control].connectTo.append(target)
+        for control in controls:
+            self.qubits[control].connections.append('C')
+            self.qubits[control].connectTo.append(target)
 
         # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
-        self.qubits[control].connectPos.append(position)
+        for control in controls:
+            self.qubits[control].connectPos.append(position)
         for qubit in self.qubits:
             qubit.earliestPos = position + 1
 
         return self
 
     # Controlled-RZ gate
-    def CRZ(self, control, target, theta):
+    def CRZ(self, controls, target, theta):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('RZ')
         angles = [theta, None, None]
         self.qubits[target].gateAngles.append(angles)
-        self.qubits[control].connections.append('C')
-        self.qubits[control].connectTo.append(target)
+        for control in controls:
+            self.qubits[control].connections.append('C')
+            self.qubits[control].connectTo.append(target)
 
         # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
-        self.qubits[control].connectPos.append(position)
+        for control in controls:
+            self.qubits[control].connectPos.append(position)
         for qubit in self.qubits:
             qubit.earliestPos = position + 1
 
         return self
 
         # Controlled-U gate
-    def CU(self, control, target, theta, phi, lambd):
+    def CU(self, controls, target, theta, phi, lambd):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
         self.qubits[target].gates.append('U')
         angles = [theta, phi, lambd]
         self.qubits[target].gateAngles.append(angles)
-        self.qubits[control].connections.append('C')
-        self.qubits[control].connectTo.append(target)
+        for control in controls:
+            self.qubits[control].connections.append('C')
+            self.qubits[control].connectTo.append(target)
 
         # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(control, target), max(control, target)+1)]
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
-        self.qubits[control].connectPos.append(position)
+        for control in controls:
+            self.qubits[control].connectPos.append(position)
         for qubit in self.qubits:
             qubit.earliestPos = position + 1
 
@@ -552,22 +570,45 @@ class Circuit:
 
                 # For controlled gates:
                 if 'C' in gates:
-                    # Create the Kronecker product matrix defining the gate operations. First create separate matrices for projecting the control qubit into the 0 or 1 state. For the projection into the 1 state, the target qubit gets its gate. All other qubits, including the target in the projection into the 0 state for the control, get an identity. Then add the two matrices together.
-                    kron0Matrix = np.array([1])
-                    kron1Matrix = np.array([1])
+                    # 
+                    numControls = gates.count('C')
+                    numOutcomes = 2**numControls
+                    Coutcomes = [np.array([1]) for outcome in range(numOutcomes)]
+                    outcomeCombos = CartesianProduct([0, 1], repeat=numControls)
+                    outcomeCombos = [list(outcome) for outcome in outcomeCombos]
+
+                    controlNum = 0
                     for Qidx, qubit in enumerate(self.qubits):
                         gateType = gates[Qidx]
                         angles = gate_angles[pos][Qidx]
+
                         if gateType == 'C':
-                            kron0Matrix = np.kron(gateMatrix('P0'), kron0Matrix)
-                            kron1Matrix = np.kron(gateMatrix('P1'), kron1Matrix)
+                            idx = 0
+                            for combo in outcomeCombos:
+                                outcome = combo[controlNum]
+                                if outcome == 0:
+                                    Coutcomes[idx] = np.kron(gateMatrix('P0'), Coutcomes[idx])
+                                else: # outcome == 1
+                                    Coutcomes[idx] = np.kron(gateMatrix('P1'), Coutcomes[idx])
+                                idx += 1
+                            controlNum += 1
+
                         elif gateType != 'I':
-                            kron0Matrix = np.kron(gateMatrix('I'), kron0Matrix)
-                            kron1Matrix = np.kron(gateMatrix(gateType, angles), kron1Matrix)
+                            idx = 0
+                            for combo in outcomeCombos:
+                                if all(combo):
+                                    Coutcomes[idx] = np.kron(gateMatrix(gateType, angles), Coutcomes[idx])
+                                else:
+                                    Coutcomes[idx] = np.kron(gateMatrix('I'), Coutcomes[idx])
+                                idx += 1
+
                         else: # gateType == 'I'
-                            kron0Matrix = np.kron(gateMatrix('I'), kron0Matrix)
-                            kron1Matrix = np.kron(gateMatrix('I'), kron1Matrix)
-                    kronMatrix = kron0Matrix + kron1Matrix
+                            idx = 0
+                            for combo in outcomeCombos:
+                                Coutcomes[idx] = np.kron(gateMatrix('I'), Coutcomes[idx])
+                                idx += 1
+
+                    kronMatrix = np.sum(Coutcomes, axis=0)
                 
                 # For SWAP gates:
                 elif 'SWAP' in gates:
