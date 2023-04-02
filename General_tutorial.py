@@ -1,24 +1,3 @@
-# Quantum Computer Simulator
-
-This repository is for a quantum computer simulator that can run quantum circuits created by the user.
-
-The user can:
-- Create quantum circuits consisting of a chosen number of qubits and classical bits (for storing the measurement results of qubits).
-- Apply Pauli-X, -Y, -Z, Hadamard, phase, Rx, Ry, Rz, U, controlled-X, -Y, -Z, =phase, -Rx, -Ry, -Rz, -U, and SWAP gates to the circuit.
-- Create a diagram of the circuit.
-- Measure the final state of the quantum circuit after measurement in the computational basis.
-- Create a histogram of the result of many shots.
-
-Preprogrammed algorithms available to the user (tutorials are provided for each):
-- Deutsch-Jozsa
-- Quantum Fourier Transform (QFT)
-- Inverse QFT (IQFT)
-
-## Tutorial
-
-A tutorial of the QPU simulator can be found in General_tutorial.py, along with the circuit diagram, General_tutorial_diagram.png, and the results histogram, General_tutorial_hist.png. The script is also provided below:
-
-```py
 # This tutorial shows how to use the QPU simulator to make your own circuits using quantum logic gates, display a diagram of your circuit, and run your circuit for many shots to obtain the results.
 #
 # In addition to the quantum logic gates shown here, some common algorithms have been preprogrammed for your convenience. See the tutorials on those algorithms to learn how to use them.
@@ -75,10 +54,3 @@ circuit.display_circuit()
 # Choose the number of shots for the circuit. Run the circuit 'shots' times and obtain the results as a list. Set hist=True to create a histogram of the results.
 shots = 1024
 results = circuit.run(shots, hist=True)
-```
-
-## Notes
-Current limitations being addressed in ongoing updates:
-- Only pure states can be considered since the circuit math is completed with state vectors. This will be updated to using density operators to represent the qubits' states so that mixed states can be considered as well.
-
-Future updates will include common algorithms preprogrammed for easy use.

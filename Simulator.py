@@ -1,5 +1,6 @@
 ## This file allows the user to create a quantum circuit, apply common qubit gates, and collect the measurement result of the circuit with many shots. A diagram of the circuit can be created.
 
+import Algorithms
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import product as CartesianProduct
@@ -27,6 +28,9 @@ def gateMatrix(gateType, angles=[0, 0, 0]):
     if gateType == 'T':
         return np.array([[1,                  0],
                          [0, np.exp(1j*np.pi/4)]])
+    if gateType == 'P':
+        return np.array([[1,                  0],
+                         [0, np.exp(1j*theta)]])
     if gateType == 'RX':
         return np.array([[    np.cos(theta/2), -1j*np.sin(theta/2)],
                          [-1j*np.sin(theta/2),     np.cos(theta/2)]])
@@ -37,7 +41,7 @@ def gateMatrix(gateType, angles=[0, 0, 0]):
         return np.array([[np.exp(-1j*theta/2),                  0],
                          [                  0, np.exp(1j*theta/2)]])
     if gateType == 'U':
-        return np.array([[np.cos(theta/2), -1*np.exp(1j*lambd)*np.sin(theta/2)],[np.exp(1j*phi)*np.sin(theta/2), np.exp(1j*(phi+lambd))*np.cos(theta/2)]])
+        return np.array([[np.cos(theta/2), -np.exp(1j*lambd)*np.sin(theta/2)],[np.exp(1j*phi)*np.sin(theta/2), np.exp(1j*(phi+lambd))*np.cos(theta/2)]])
 
     # Projection matrices into the computational basis. Used for constructing controlled-U gates and measurements.
     if gateType == 'P0':
@@ -77,6 +81,7 @@ class Circuit:
     def __init__(self, numQubits):
 
         # Create a list of qubits. Each instance of the class Qubit will store the gates applied to the qubit. This is useful for creating a diagram of the circuit.
+        self.numQubits = numQubits
         self.qubits = [Qubit() for qubit in range(numQubits)]
         
         # Form the state of all the qubits in the circuit. Assume all qubits are initialized in the |0> state, [1, 0]
@@ -85,6 +90,7 @@ class Circuit:
             self.state = np.tensordot([1, 0], self.state, axes=0).reshape(len(self.state)*2, 1)
         
         # Create a list of classical bits, each initialized in the 0 state.
+        self.numCbits = numQubits
         self.cbits = [Cbit(0) for cbit in range(numQubits)]
 
     ## Gate functions below add their respective gates to the ongoing list of gates defined for each qubit. When running the circuit with run(), the gate lists are collected and applied to the circuit's initial state vector.
@@ -92,118 +98,163 @@ class Circuit:
     ## SINGLE QUBIT GATES ##
 
     # Pauli-X gate
-    def X(self, target):
+    def X(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('X')
-        angles = [None, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('X')
+            angles = [None, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
         return self
 
     # Pauli-Y gate
-    def Y(self, target):
+    def Y(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('Y')
-        angles = [None, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('Y')
+            angles = [None, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
         return self
 
     # Pauli-Z gate
-    def Z(self, target):
+    def Z(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('Z')
-        angles = [None, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('Z')
+            angles = [None, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
         return self
     
     # Hadamard gate
-    def H(self, target):
+    def H(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('H')
-        angles = [None, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('H')
+            angles = [None, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
         return self
     
     # Phase gate
-    def S(self, target):
+    def S(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('S')
-        angles = [None, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('S')
+            angles = [None, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
         return self
     
     # pi/8 gate
-    def T(self, target):
+    def T(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubit. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('T')
-        angles = [None, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('T')
+            angles = [None, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
         return self
     
-    # R_X gate
-    def RX(self, target, theta):
+    # phase gate
+    def P(self, targets, theta):
 
-        # Append the gate onto the running list of gates for the target qubit. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('RX')
-        angles = [theta, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('P')
+            angles = [theta, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
+
+        return self
+
+    # R_X gate
+    def RX(self, targets, theta):
+
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('RX')
+            angles = [theta, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
         return self
     
     # R_Y gate
-    def RY(self, target, theta):
+    def RY(self, targets, theta):
 
-        # Append the gate onto the running list of gates for the target qubit. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('RY')
-        angles = [theta, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('RY')
+            angles = [theta, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
     # R_Z gate
-    def RZ(self, target, theta):
+    def RZ(self, targets, theta):
 
-        # Append the gate onto the running list of gates for the target qubit. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('RZ')
-        angles = [theta, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('RZ')
+            angles = [theta, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
     # U gate
-    def U(self, target, theta, phi, lambd):
+    def U(self, targets, theta, phi, lambd):
 
-        # Append the gate onto the running list of gates for the target qubit. gateAngles stores lists of angles, so place the angles in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
-        self.qubits[target].gates.append('U')
-        angles = [theta, phi, lambd]
-        self.qubits[target].gateAngles.append(angles)
-        self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
-        self.qubits[target].earliestPos += 1
+        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('U')
+            angles = [theta, phi, lambd]
+            self.qubits[target].gateAngles.append(angles)
+            self.qubits[target].gatePos.append(self.qubits[target].earliestPos)
+            self.qubits[target].earliestPos += 1
 
     ## TWO QUBIT GATES ##
 
@@ -273,6 +324,28 @@ class Circuit:
 
         return self
     
+    # Controlled-P gate
+    def CP(self, controls, target, theta):
+
+        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        self.qubits[target].gates.append('P')
+        angles = [theta, None, None]
+        self.qubits[target].gateAngles.append(angles)
+        for control in controls:
+            self.qubits[control].connections.append('C')
+            self.qubits[control].connectTo.append(target)
+
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
+        position = max(earliestPositions)
+        self.qubits[target].gatePos.append(position)
+        for control in controls:
+            self.qubits[control].connectPos.append(position)
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
+
+        return self
+
     # Controlled-RX gate
     def CRX(self, controls, target, theta):
 
@@ -381,7 +454,7 @@ class Circuit:
 
         return self
     
-    ## OTHER FUNCTIONS ##
+    ## OTHER CIRCUIT FUNCTIONS ##
 
     # Add a barrier to the circuit. The state vector does not change. A barrier is purely for visual purposes when displaying the circuit to divide the circuit into segments.
     def barrier(self):
@@ -399,33 +472,62 @@ class Circuit:
             qubit.earliestPos = earliestPosition + 1
 
     # Measure a qubit and store the result in a classical bit. This is a measurement in the computational basis (projection into the 0 or 1 state).
-    def measure(self, target):
+    def measure(self, targets):
 
         # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
-        self.qubits[target].gates.append('M')
-        angles = [None, None, None]
-        self.qubits[target].gateAngles.append(angles)
-        self.cbits[target].connections.append('O')
-        self.cbits[target].connectTo.append(target)
+        if type(targets) == int:
+            targets = [targets]
+        for target in targets:
+            self.qubits[target].gates.append('M')
+            angles = [None, None, None]
+            self.qubits[target].gateAngles.append(angles)
+            self.cbits[target].connections.append('O')
+            self.cbits[target].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits between the target and control (inclusive).
-        earliestPositions = [qubit.earliestPos for qubit in self.qubits[target:]]
-        for cbit in self.cbits[:target]:
-            earliestPositions.append(cbit.earliestPos)
-        position = max(earliestPositions)
-        self.qubits[target].gatePos.append(position)
-        self.cbits[target].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
-        for cbit in self.cbits:
-            cbit.earliestPos = position + 1
+            # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits between the target and control (inclusive).
+            earliestPositions = [qubit.earliestPos for qubit in self.qubits[target:]]
+            for cbit in self.cbits[:target]:
+                earliestPositions.append(cbit.earliestPos)
+            position = max(earliestPositions)
+            self.qubits[target].gatePos.append(position)
+            self.cbits[target].connectPos.append(position)
+            for qubit in self.qubits:
+                qubit.earliestPos = position + 1
+            for cbit in self.cbits:
+                cbit.earliestPos = position + 1
 
         return self
     
+    ## PREPROGRAMMED ALGORITHMS ##
+
+    # Deutsch-Jozsa algorithm: this algorithm takes a provided oracle in the form of f({x1, x2, ..., xn}) = {0, 1} where each input x as 0 or 1. The oracle must be constant, i.e. all possible inputs yield the same output of 0 or 1, or balanced, i.e. half of all possible inputs yield 0 and the other half all yield 1. This algorithm can identify if the oracle is constant or balanced with 100% accuracy in just a single shot of the circuit. For constant oracles, all input qubits will be measured in the |0> state at the end of the algorithm, vs all |1>'s for balanced oracles.
+    # 
+    # While not an interesting algorithm from a practical perspective, this algorithm does show that certain problems can be completed much more efficiently on a quanutm computer than a classical computer. On a classical computer, it would take 2^(n-1)+1 shots to identify the oracle as constant or balanced with 100% accuracy, with n being the number of inputs (x's) to the oracle.
+    #
+    # See Algorithms.py to learn how to use an example oracle, or create your own constant or balanced oracle and pass it to 'oracle' as a python function.
+    def DeutschJozsa(self, oracle, constantOracleOutput=0, balancedInputFlips=[]):
+        Algorithms.DeutschJozsa(self, oracle, constantOracleOutput, balancedInputFlips)
+        return
+    
+    def QFT(self):
+        Algorithms.QFT(self)
+        return
+    
+    def IQFT(self):
+        Algorithms.IQFT(self)
+        return
+
     # Assign the gate label, box, and connection property to be used for displaying the circuit
     def format_gate(self, gate, angles=[0, 0, 0]):
+        # User-defined phase gate
+        if gate == 'P':
+            [theta, phi, lambd] = angles
+            gateLabel = 'P\n(%s)'%str(round(theta, 2))
+            size = 10
+            bbox=dict(boxstyle='square', facecolor='white')
+            arrowprops=dict()
         # Rotation gates
-        if gate in {'RX', 'RY', 'RZ'}:
+        elif gate in {'RX', 'RY', 'RZ'}:
             [theta, phi, lambd] = angles
             letters = list(gate)
             gateLabel = '$%s_%s$\n(%s)'%(letters[0], letters[1], str(round(theta, 2)))
@@ -435,7 +537,7 @@ class Circuit:
         # U gates
         elif gate == 'U':
             [theta, phi, lambd] = angles
-            gateLabel = '%s\n(%s,%s,%s)'%(gate, str(round(theta, 2)), str(round(phi, 2)), str(round(lambd, 2)))
+            gateLabel = 'U\n(%s,%s,%s)'%(str(round(theta, 2)), str(round(phi, 2)), str(round(lambd, 2)))
             size = 10
             bbox=dict(boxstyle='square', facecolor='white')
             arrowprops=dict()
@@ -486,25 +588,23 @@ class Circuit:
                     circuitLength = lastPos
 
         # Set some style parameters
-        numQubits = len(self.qubits)
-        numCbits = len(self.cbits)
         bitLabelPosition = 0
         bitLabelFontSize = 15
-        ax.set(xlim=(0, circuitLength+1), ylim=(-1*(numQubits+numCbits), 1))
+        ax.set(xlim=(0, circuitLength+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
         ax.set_axis_off()
 
         # Display each classical bit. These are displayed first for proper layer ordering when displaying connections between qubits and classical bits.
         offset = 0.05
         for Bidx, cbit in enumerate(self.cbits):
             # Display the classical bit labels and a double line to represent their wires. "offset" creates a small spacing between the two plotted lines for each bit to give the double line visual.
-            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
-            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+numQubits)+offset, -1*(Bidx+numQubits)+offset], color='black')
-            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+numQubits)-offset, -1*(Bidx+numQubits)-offset], color='black')
+            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+self.numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
+            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)+offset, -1*(Bidx+self.numQubits)+offset], color='black')
+            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)-offset, -1*(Bidx+self.numQubits)-offset], color='black')
 
             # Display each connection using the properties from format_gate
             for Cidx, connection in enumerate(cbit.connections):
                 [connectLabel, size, bbox, arrowprops] = self.format_gate(connection)
-                ax.annotate(connectLabel, xy=(cbit.connectPos[Cidx], -1*cbit.connectTo[Cidx]), xytext=(cbit.connectPos[Cidx], -1*(Bidx+numQubits)), size=size, va='center', ha='center', bbox=bbox, arrowprops=arrowprops)
+                ax.annotate(connectLabel, xy=(cbit.connectPos[Cidx], -1*cbit.connectTo[Cidx]), xytext=(cbit.connectPos[Cidx], -1*(Bidx+self.numQubits)), size=size, va='center', ha='center', bbox=bbox, arrowprops=arrowprops)
 
         # Display each qubit
         for Qidx, qubit in enumerate(self.qubits):
@@ -521,7 +621,7 @@ class Circuit:
         # Display each qubit gate using the properties from format_gate.
         for Qidx, qubit in enumerate(self.qubits):
             for Gidx, gate in enumerate(qubit.gates):
-                if gate in {'RX', 'RY', 'RZ', 'U'}:
+                if gate in {'P', 'RX', 'RY', 'RZ', 'U'}:
                     angles = qubit.gateAngles[Gidx]
                     [gateLabel, size, bbox, arrowprops] = self.format_gate(gate, angles)
                 else:
@@ -558,7 +658,11 @@ class Circuit:
         
         # Create an empty list of results with size equal to the total number of shots. Repeat the circuit's gates applications and measurements for each shot, storing the result from each shot in the list 'results'
         results = ['']*shots
+        originalState = self.state
         for shot in range(shots):
+
+            self.state = originalState
+
             for pos in range(circuitLength):
 
                 # Get the next circuit position's list of gates
@@ -646,9 +750,9 @@ class Circuit:
                     
                     # For each of the 0 and 1 state projection matrices, apply the projection to the circuit's current state to get the resulting state. Transpose the circuit's current state (without the projection) and apply it to the resulting state (with the projection) to get the probability of the measurement outcome.
                     state0 = np.dot(kron0Matrix, self.state)
-                    prob0 = np.dot(self.state.T, state0)[0][0]
+                    prob0 = np.vdot(state0, state0)
                     state1 = np.dot(kron1Matrix, self.state)
-                    prob1 = np.dot(self.state.T, state1)[0][0]
+                    prob1 = np.vdot(state1, state1)
                     
                     # Generate a random number between 0 and 1. If it is less than the probability of the target qubit being in the 0 state, set the classical bit to 0 and update the circuit's state with the projection-into-0 state from above (normalized with the square root of the probability of measuring 0). Otherwise, set the classical bit to 1 and update the circuit's state with the projection-into-1 state (normalized).
                     if np.random.rand(1) < prob0:
@@ -664,7 +768,7 @@ class Circuit:
                     kronMatrix = np.array([1])
                     for Qidx, qubit in enumerate(self.qubits):
                         gateType = gates[Qidx]
-                        if gateType in {'RX', 'RY', 'RZ', 'U'}:
+                        if gateType in {'P', 'RX', 'RY', 'RZ', 'U'}:
                             angles = gate_angles[pos][Qidx]
                             kronMatrix = np.kron(gateMatrix(gateType, angles), kronMatrix)
                         else:
