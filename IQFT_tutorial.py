@@ -17,7 +17,7 @@ circuit.P(0, theta=5*np.pi/4)
 circuit.P(1, theta=5*np.pi/2)
 circuit.P(2, theta=5*np.pi)
 
-# To apply the algorithm to your circuit, you can apply it just as you would a qubit gate.
+# To apply the algorithm to your circuit, you can apply it just as you would a qubit gate. You may provide the number of qubits to perform the IQFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default by passing nothing, and the function will get the number of qubits in the circuit.
 circuit.IQFT()
 
 # Measure each input qubit. 

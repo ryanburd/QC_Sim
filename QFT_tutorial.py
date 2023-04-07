@@ -13,7 +13,7 @@ circuit = QPU.Circuit(numQubits)
 # Initialize the circuit to a state of your choosing. For example, the state |5> = |101>
 circuit.X([0, 2])
 
-# To apply the algorithm to your circuit, you can apply it just as you would a qubit gate.
+# To apply the algorithm to your circuit, you can apply it just as you would a qubit gate. You may provide the number of qubits to perform the QFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform QFT on all qubits within the circuit, you may leave this argument as the default by passing nothing, and the function will get the number of qubits in the circuit.
 circuit.QFT()
 
 # Measure each input qubit. 
