@@ -13,6 +13,7 @@ Preprogrammed algorithms available to the user (tutorials are provided for each)
 - Deutsch-Jozsa
 - Quantum Fourier Transform (QFT)
 - Inverse QFT (IQFT)
+- Quantum phase estimation (QPE)
 
 ## Tutorial
 

@@ -509,12 +509,27 @@ class Circuit:
         Algorithms.DeutschJozsa(self, oracle, constantOracleOutput, balancedInputFlips)
         return
     
-    def QFT(self):
-        Algorithms.QFT(self)
+    # Quantum Fourier Transform (QFT): this algorithm converts qubits in the computational basis into the Fourier basis. This is commonly used as a sub-step within other algorithms.
+    #
+    # You may provide the number of qubits to perform the QFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform QFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
+    def QFT(self, numQubits=0):
+        Algorithms.QFT(self, numQubits)
         return
     
-    def IQFT(self):
-        Algorithms.IQFT(self)
+    # Inverse Quantum Fourier Transform (IQFT): this algorithm converts qubits in the Fourier basis into the computational basis. This is commonly used as a sub-step within other algorithms.
+    #
+    # You may provide the number of qubits to perform the IQFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
+    def IQFT(self, numQubits=0):
+        Algorithms.IQFT(self, numQubits)
+        return
+    
+    # Quantum phase estimation (QPE): this algorithm estimates the angle theta within the eigenvalue problem U|psi> = e^(2pi*i*theta)|psi>. The more qubits are included in the algorithm, the higher the precision of the algorithm (at the expense of higher computational cost). This is commonly used as a sub-step within other algorithms.
+    #
+    # The angle lambd = 2pi*theta must be passed as an argument.
+    #
+    # You may provide the number of qubits to perform the QPE on using numPrecisionQubits. To perform QPE on all qubits within the circuit (minus the final qubit which represents |psi>), you may leave this argument as the default, and the function will get the number of qubits in the circuit.
+    def QPE(self, lambd, numPrecisionQubits=0):
+        Algorithms.QPE(self, lambd, numPrecisionQubits)
         return
 
     # Assign the gate label, box, and connection property to be used for displaying the circuit
