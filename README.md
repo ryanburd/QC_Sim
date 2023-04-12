@@ -81,5 +81,6 @@ results = circuit.run(shots, hist=True)
 ## Notes
 Current limitations being addressed in ongoing updates:
 - Only pure states can be considered since the circuit math is completed with state vectors. This will be updated to using density operators to represent the qubits' states so that mixed states can be considered as well.
+- Preprogrammed algorithms must use the first n qubits indexed 0 to n-1. For the Deutsch-Jozsa and QPE algorithms, the extra qubit must be after the input qubits. Future updates will allow the user to identify which qubits within the circuit they would like to apply an algorithm to.
 
 Future updates will include common algorithms preprogrammed for easy use.
