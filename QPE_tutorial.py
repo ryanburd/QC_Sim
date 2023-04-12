@@ -48,17 +48,17 @@ print('Theta lower bound = %.3f (%.1f %% error)'%(lowerBound_theta, lowerBound_e
 print('Theta upper bound = %.3f (%.1f %% error)'%(upperBound_theta, upperBound_error))
 
 # You can apply the algorithm using any oracle by accessing Algorithms.py directly if it is imported. In this case, pass the circuit and lambd to the QPE function. For circuit operations, this is identical to applying the algorithm using the gate syntax used above. Only the syntax for calling the algorithm changes. Use whichever syntax is more intuitive to you.
-numPrecisionQubits = 4
-circuit = QPU.Circuit(numPrecisionQubits+1)
+# numPrecisionQubits = 4
+# circuit = QPU.Circuit(numPrecisionQubits+1)
 
-theta = 1/3
-lambd = 2*np.pi*theta
-QPE(circuit, lambd)
+# theta = 1/3
+# lambd = 2*np.pi*theta
+# QPE(circuit, lambd)
 
-for qubit in range(numPrecisionQubits):
-    circuit.measure(qubit)
+# for qubit in range(numPrecisionQubits):
+#     circuit.measure(qubit)
 
-circuit.display_circuit()
+# circuit.display_circuit()
 
-shots = 1024
-results = circuit.run(shots, hist=True)
+# shots = 1024
+# results = circuit.run(shots, hist=True)

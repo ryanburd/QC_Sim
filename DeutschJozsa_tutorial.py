@@ -51,43 +51,43 @@ results = circuit.run(shots, hist=True)
 # Algorithms.py also inlcudes example constant and balanced oracles if you do not want to define your own.
 #
 # To use the example constant oracle, pass the string 'constant' as the 'oracle' argument. Choose the constant for the output qubit with 'constant OracleOutput'. The default is 0.
-numInputQubits = 3
-circuit = QPU.Circuit(numInputQubits+1)
+# numInputQubits = 3
+# circuit = QPU.Circuit(numInputQubits+1)
 
-circuit.DeutschJozsa(oracle='constant', constantOracleOutput=1)
+# circuit.DeutschJozsa(oracle='constant', constantOracleOutput=1)
 
-for qubit in range(numInputQubits):
-    circuit.measure(qubit)
+# for qubit in range(numInputQubits):
+#     circuit.measure(qubit)
 
-circuit.display_circuit()
+# circuit.display_circuit()
 
-shots = 1024
-results = circuit.run(shots, hist=True)
+# shots = 1024
+# results = circuit.run(shots, hist=True)
 
 # The example balanced oracle is actually the exact same oracle defined above as 'tutorialOracle'. To use this oracle without defining it yourself, pass the string 'balanced' as the 'oracle' argument. Choose which input qubits to flip in the oracle by passing their indicies as a list in 'balancedInputFlips'. The default is no input qubits.
-numInputQubits = 3
-circuit = QPU.Circuit(numInputQubits+1)
+# numInputQubits = 3
+# circuit = QPU.Circuit(numInputQubits+1)
 
-circuit.DeutschJozsa(oracle='balanced', balancedInputFlips=[0, 1])
+# circuit.DeutschJozsa(oracle='balanced', balancedInputFlips=[0, 1])
 
-for qubit in range(numInputQubits):
-    circuit.measure(qubit)
+# for qubit in range(numInputQubits):
+#     circuit.measure(qubit)
 
-circuit.display_circuit()
+# circuit.display_circuit()
 
-shots = 1024
-results = circuit.run(shots, hist=True)
+# shots = 1024
+# results = circuit.run(shots, hist=True)
 
 # You can apply the algorithm using any oracle by accessing Algorithms.py directly if it is imported. In this case, pass the circuit as the first argument to the DeutschJozsa function. For circuit operations, this is identical to applying the algorithm using the gate syntax used above. Only the syntax for calling the algorithm changes. Use whichever syntax is more intuitive to you.
-numInputQubits = 3
-circuit = QPU.Circuit(numInputQubits+1)
+# numInputQubits = 3
+# circuit = QPU.Circuit(numInputQubits+1)
 
-DeutschJozsa(circuit, oracle=tutorialOracle)
+# DeutschJozsa(circuit, oracle=tutorialOracle)
 
-for qubit in range(numInputQubits):
-    circuit.measure(qubit)
+# for qubit in range(numInputQubits):
+#     circuit.measure(qubit)
 
-circuit.display_circuit()
+# circuit.display_circuit()
 
-shots = 1024
-results = circuit.run(shots, hist=True)
+# shots = 1024
+# results = circuit.run(shots, hist=True)

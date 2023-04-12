@@ -27,17 +27,17 @@ shots = 1024
 results = circuit.run(shots, hist=True)
 
 # You can apply the algorithm using any oracle by accessing Algorithms.py directly if it is imported. In this case, pass the circuit as the only argument to the QFT function. For circuit operations, this is identical to applying the algorithm using the gate syntax used above. Only the syntax for calling the algorithm changes. Use whichever syntax is more intuitive to you.
-numQubits = 3
-circuit = QPU.Circuit(numQubits)
+# numQubits = 3
+# circuit = QPU.Circuit(numQubits)
 
-circuit.X([0, 2])
+# circuit.X([0, 2])
 
-QFT(circuit)
+# QFT(circuit)
 
-for qubit in range(numQubits):
-    circuit.measure(qubit)
+# for qubit in range(numQubits):
+#     circuit.measure(qubit)
 
-circuit.display_circuit()
+# circuit.display_circuit()
 
-shots = 1024
-results = circuit.run(shots, hist=True)
+# shots = 1024
+# results = circuit.run(shots, hist=True)
