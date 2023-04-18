@@ -9,21 +9,25 @@ import numpy as np
 
 # Create a quantum circuit with a chosen number of precision qubits. 1 qubit is automatically added for the the psi vector qubit, where psi is the eigenvector of the phase operation. The same number of classica bits will be created for qubit measurement output. The output of each qubit is stored in its similarly indexed classical bit.
 numPrecisionQubits = 4
-circuit = QPU.Circuit(numPrecisionQubits+1)
+circuit = QPU.Circuit(numPrecisionQubits+2)
 
 # Apply the QPE algorithm with a chosen value of lambd (defined by theta) for the controlled-P gate.
 theta = 1/3
 lambd = 2*np.pi*theta
-circuit.QPE(lambd)
+circuit.QPE(lambd, numPrecisionQubits)
 
-# Measure each precision qubit. 
+# Measure each precision qubit.
+circuit.X([0,5])
+circuit.H(5)
+circuit.Z(5)
 circuit.measure(range(numPrecisionQubits))
+circuit.X([0,1,2,3,4,5])
 
 # Display the quantum circuit.
 circuit.display_circuit()
 
 # Choose the number of shots for the circuit. Run the circuit 'shots' times and obtain the results as a list. Set hist=True to create a histogram of the results.
-shots = 1024
+shots = 1
 results = circuit.run(shots, hist=True)
 
 # In this tutorial for using QPE, theta is obviously already known since we provided it when defining lambd. In more useful applications of QPE, theta is not known intially.

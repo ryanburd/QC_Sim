@@ -276,8 +276,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
     
@@ -298,8 +298,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
     
@@ -320,8 +320,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
     
@@ -342,8 +342,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
 
@@ -364,8 +364,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
 
@@ -386,8 +386,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
 
@@ -408,8 +408,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
 
@@ -430,8 +430,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
 
@@ -450,8 +450,8 @@ class Circuit:
         position = max(earliestPositions)
         self.qubits[target2].gatePos.append(position)
         self.qubits[target1].connectPos.append(position)
-        for qubit in self.qubits:
-            qubit.earliestPos = position + 1
+        for Qidx in range(min(target1, target2), max(target1, target2)+1):
+            self.qubits[Qidx].earliestPos = position + 1
 
         return self
     
@@ -492,7 +492,7 @@ class Circuit:
             position = max(earliestPositions)
             self.qubits[target].gatePos.append(position)
             self.cbits[target].connectPos.append(position)
-            for qubit in self.qubits:
+            for qubit in self.qubits[target:]:
                 qubit.earliestPos = position + 1
             for cbit in self.cbits:
                 cbit.earliestPos = position + 1
@@ -551,29 +551,25 @@ class Circuit:
 
         # Get the earliest position available for all qubits involved in the algorithm.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        position = max(earliestPositions)
+        algorithmStart = max(earliestPositions)
 
         # Add an algorithm identifier to the qubits' gate lists. This will be used for displaying the circuit only.
+        self.qubits[0].gates.append('QFT,%i'%(numQubits))
+        angles = [None, None, None]
+        self.qubits[0].gateAngles.append(angles)
+        startIdx = len(self.qubits[0].gatePos)
+        self.qubits[0].gatePos.append(algorithmStart)
         for qubit in range(numQubits):
-            self.qubits[qubit].gates.append('QFT')
-            angles = [None, None, None]
-            self.qubits[qubit].gateAngles.append(angles)
-            self.qubits[qubit].gatePos.append(position)
-            self.qubits[qubit].earliestPos = position + 1
+            self.qubits[qubit].earliestPos = algorithmStart + 1
         
         # Apply the algorithm
         Algorithms.QFT(self, numQubits)
 
-        # Repeat the procedure from above to signal the end of the algorithm. Again, this is for display purposes only.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        position = max(earliestPositions)
-
-        for qubit in range(numQubits):
-            self.qubits[qubit].gates.append('QFT')
-            angles = [None, None, None]
-            self.qubits[qubit].gateAngles.append(angles)
-            self.qubits[qubit].gatePos.append(position)
-            self.qubits[qubit].earliestPos = position + 1
+        algorithmEnd = max(earliestPositions)
+        algorithmLength = algorithmEnd - algorithmStart - 1
+        
+        self.qubits[0].gates[startIdx] = self.qubits[0].gates[startIdx] + ',%i'%algorithmLength
 
         return
     
@@ -623,37 +619,39 @@ class Circuit:
     # You may provide the number of qubits to perform the QPE on using numPrecisionQubits. To perform QPE on all qubits within the circuit (minus the final qubit which represents |psi>), you may leave this argument as the default, and the function will get the number of qubits in the circuit.
     def QPE(self, lambd, numPrecisionQubits=0):
 
-        # # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
-        # if numPrecisionQubits == 0:
-        #     numPrecisionQubits = self.numQubits-1
-        # else:
-        #     pass
+        # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
+        if numPrecisionQubits == 0:
+            numPrecisionQubits = self.numQubits-1
+        else:
+            pass
 
-        # # Get the earliest position available for all qubits involved in the algorithm.
-        # earliestPositions = [self.qubits[idx].earliestPos for idx in range(numPrecisionQubits)]
-        # position = max(earliestPositions)
+        numQubits = numPrecisionQubits + 1
 
-        # # Add an algorithm identifier to the qubits' gate lists. This will be used for displaying the circuit only.
-        # for qubit in range(numPrecisionQubits):
-        #     self.qubits[qubit].gates.append('QPE')
-        #     angles = [None, None, None]
-        #     self.qubits[qubit].gateAngles.append(angles)
-        #     self.qubits[qubit].gatePos.append(position)
-        #     self.qubits[qubit].earliestPos = position + 1
+        # Get the earliest position available for all qubits involved in the algorithm.
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
+        position = max(earliestPositions)
+
+        # Add an algorithm identifier to the qubits' gate lists. This will be used for displaying the circuit only.
+        for qubit in range(numQubits):
+            self.qubits[qubit].gates.append('QPE')
+            angles = [None, None, None]
+            self.qubits[qubit].gateAngles.append(angles)
+            self.qubits[qubit].gatePos.append(position)
+            self.qubits[qubit].earliestPos = position + 1
         
         # Apply the algorithm
         Algorithms.QPE(self, lambd, numPrecisionQubits)
 
-        # # Repeat the procedure from above to signal the end of the algorithm. Again, this is for display purposes only.
-        # earliestPositions = [self.qubits[idx].earliestPos for idx in range(numPrecisionQubits)]
-        # position = max(earliestPositions)
+        # Repeat the procedure from above to signal the end of the algorithm. Again, this is for display purposes only.
+        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
+        position = max(earliestPositions)
 
-        # for qubit in range(numPrecisionQubits):
-        #     self.qubits[qubit].gates.append('QPE')
-        #     angles = [None, None, None]
-        #     self.qubits[qubit].gateAngles.append(angles)
-        #     self.qubits[qubit].gatePos.append(position)
-        #     self.qubits[qubit].earliestPos = position + 1
+        for qubit in range(numQubits):
+            self.qubits[qubit].gates.append('QPE')
+            angles = [None, None, None]
+            self.qubits[qubit].gateAngles.append(angles)
+            self.qubits[qubit].gatePos.append(position)
+            self.qubits[qubit].earliestPos = position + 1
 
         return
 
@@ -724,35 +722,10 @@ class Circuit:
         # Create a deep copy of the circuit that will be edited for display purposes only. Within the circuit deep copy, collapse any algorithm segments into one multi-qubit gate and update the position of all subsequent gates.
         displayCircuit = deepcopy(self)
         for Qidx, qubit in enumerate(displayCircuit.qubits):
-            algorithmStart = 0
-            algorithmEnd = 0
-            algorithmOpen = False
             for Gidx, gate in enumerate(qubit.gates):
-                if algorithmOpen:
-                    qubit.gates[Gidx] = 'skip'
-                if gate in {'DJ', 'QFT', 'IQFT', 'QPE'}:
-                    if not algorithmOpen:
-                        algorithmStart = qubit.gatePos[Gidx]
-                        algorithmOpen = True
-                    else:
-                        algorithmEnd = qubit.gatePos[Gidx]
-                        algorithmShift = algorithmEnd - algorithmStart
-                        algorithmOpen = False
-
-                        for Pidx, position in enumerate(qubit.gatePos):
-                            if position > algorithmEnd:
-                                qubit.gatePos[Pidx] -= algorithmShift
-
-                        for Cidx, Cposition in enumerate(qubit.connectPos):
-                            if Cposition in range(algorithmStart+1, algorithmEnd):
-                                qubit.connections[Cidx] = 'skip'
-                            elif Cposition > algorithmEnd:
-                                qubit.connectPos[Cidx] -= algorithmShift
-
-                        for Bidx, cbit in enumerate(displayCircuit.cbits):
-                            for Cidx, Cposition in enumerate(cbit.connectPos):
-                                if Cposition > algorithmEnd:
-                                    cbit.connectPos[Cidx] -= algorithmShift
+                if ',' in gate:
+                    [algorithmType, qubitsInvolved, algorithmLength] = gate.split(',')
+                    
 
         # Get the circuit length
         circuitLength = 0
