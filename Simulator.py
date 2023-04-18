@@ -4,7 +4,6 @@ import Algorithms
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import product as CartesianProduct
-from copy import deepcopy
 
 # Define common matrices used for gate operations. Since the rotation matrices need to receive angles, these matrices are packaged into a function instead of a dictionary, though this function essential acts as a dictionary.
 def gateMatrix(gateType, angles=[0, 0, 0]):
@@ -507,41 +506,14 @@ class Circuit:
     #
     # See Algorithms.py to learn how to use an example oracle, or create your own constant or balanced oracle and pass it to 'oracle' as a python function.
     def DeutschJozsa(self, oracle, constantOracleOutput=0, balancedInputFlips=[]):
-
-        numQubits = self.numQubits
-
-        # Get the earliest position available for all qubits involved in the algorithm.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        position = max(earliestPositions)
-
-        # Add an algorithm identifier to the qubits' gate lists. This will be used for displaying the circuit only.
-        for qubit in range(numQubits):
-            self.qubits[qubit].gates.append('DJ')
-            angles = [None, None, None]
-            self.qubits[qubit].gateAngles.append(angles)
-            self.qubits[qubit].gatePos.append(position)
-            self.qubits[qubit].earliestPos = position + 1
-        
-        # Apply the algorithm
         Algorithms.DeutschJozsa(self, oracle, constantOracleOutput, balancedInputFlips)
-
-        # Repeat the procedure from above to signal the end of the algorithm. Again, this is for display purposes only.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        position = max(earliestPositions)
-
-        for qubit in range(numQubits):
-            self.qubits[qubit].gates.append('DJ')
-            angles = [None, None, None]
-            self.qubits[qubit].gateAngles.append(angles)
-            self.qubits[qubit].gatePos.append(position)
-            self.qubits[qubit].earliestPos = position + 1
-        
         return
     
     # Quantum Fourier Transform (QFT): this algorithm converts qubits in the computational basis into the Fourier basis. This is commonly used as a sub-step within other algorithms.
     #
     # You may provide the number of qubits to perform the QFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform QFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
     def QFT(self, numQubits=0):
+<<<<<<< HEAD
 
         # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
         if numQubits == 0:
@@ -571,45 +543,16 @@ class Circuit:
         
         self.qubits[0].gates[startIdx] = self.qubits[0].gates[startIdx] + ',%i'%algorithmLength
 
+=======
+        Algorithms.QFT(self, numQubits)
+>>>>>>> parent of 1918c04 (Reformating the display of preprogrammed algorithms)
         return
     
     # Inverse Quantum Fourier Transform (IQFT): this algorithm converts qubits in the Fourier basis into the computational basis. This is commonly used as a sub-step within other algorithms.
     #
     # You may provide the number of qubits to perform the IQFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
     def IQFT(self, numQubits=0):
-
-        # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
-        if numQubits == 0:
-            numQubits = self.numQubits
-        else:
-            pass
-
-        # Get the earliest position available for all qubits involved in the algorithm.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        position = max(earliestPositions)
-
-        # Add an algorithm identifier to the qubits' gate lists. This will be used for displaying the circuit only.
-        for qubit in range(numQubits):
-            self.qubits[qubit].gates.append('IQFT')
-            angles = [None, None, None]
-            self.qubits[qubit].gateAngles.append(angles)
-            self.qubits[qubit].gatePos.append(position)
-            self.qubits[qubit].earliestPos = position + 1
-        
-        # Apply the algorithm
         Algorithms.IQFT(self, numQubits)
-
-        # Repeat the procedure from above to signal the end of the algorithm. Again, this is for display purposes only.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        position = max(earliestPositions)
-
-        for qubit in range(numQubits):
-            self.qubits[qubit].gates.append('IQFT')
-            angles = [None, None, None]
-            self.qubits[qubit].gateAngles.append(angles)
-            self.qubits[qubit].gatePos.append(position)
-            self.qubits[qubit].earliestPos = position + 1
-
         return
     
     # Quantum phase estimation (QPE): this algorithm estimates the angle theta within the eigenvalue problem U|psi> = e^(2pi*i*theta)|psi>. The more qubits are included in the algorithm, the higher the precision of the algorithm (at the expense of higher computational cost). This is commonly used as a sub-step within other algorithms.
@@ -618,6 +561,7 @@ class Circuit:
     #
     # You may provide the number of qubits to perform the QPE on using numPrecisionQubits. To perform QPE on all qubits within the circuit (minus the final qubit which represents |psi>), you may leave this argument as the default, and the function will get the number of qubits in the circuit.
     def QPE(self, lambd, numPrecisionQubits=0):
+<<<<<<< HEAD
 
         # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
         if numPrecisionQubits == 0:
@@ -653,11 +597,13 @@ class Circuit:
             self.qubits[qubit].gatePos.append(position)
             self.qubits[qubit].earliestPos = position + 1
 
+=======
+        Algorithms.QPE(self, lambd, numPrecisionQubits)
+>>>>>>> parent of 1918c04 (Reformating the display of preprogrammed algorithms)
         return
 
     # Assign the gate label, box, and connection property to be used for displaying the circuit
     def format_gate(self, gate, angles=[0, 0, 0]):
-        
         # User-defined phase gate
         if gate == 'P':
             [theta, phi, lambd] = angles
@@ -698,7 +644,6 @@ class Circuit:
             size = 10
             bbox=dict(boxstyle='circle', facecolor='none', edgecolor='black', linewidth=2)
             arrowprops=dict(arrowstyle="<|-", edgecolor='black', linewidth=2)
-        # Circuit barrier
         elif gate == 'B':
             gateLabel = ' '
             size = 10
@@ -719,6 +664,7 @@ class Circuit:
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
+<<<<<<< HEAD
         # Create a deep copy of the circuit that will be edited for display purposes only. Within the circuit deep copy, collapse any algorithm segments into one multi-qubit gate and update the position of all subsequent gates.
         displayCircuit = deepcopy(self)
         for Qidx, qubit in enumerate(displayCircuit.qubits):
@@ -727,9 +673,11 @@ class Circuit:
                     [algorithmType, qubitsInvolved, algorithmLength] = gate.split(',')
                     
 
+=======
+>>>>>>> parent of 1918c04 (Reformating the display of preprogrammed algorithms)
         # Get the circuit length
         circuitLength = 0
-        for qubit in displayCircuit.qubits:
+        for qubit in self.qubits:
             if len(qubit.gates) > 0:
                 lastPos = qubit.gatePos[-1]
                 if lastPos > circuitLength:
@@ -738,55 +686,48 @@ class Circuit:
         # Set some style parameters
         bitLabelPosition = 0
         bitLabelFontSize = 15
-        ax.set(xlim=(0, circuitLength+1), ylim=(-1*(displayCircuit.numQubits+displayCircuit.numCbits), 1))
+        ax.set(xlim=(0, circuitLength+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
         ax.set_axis_off()
 
         # Display each classical bit. These are displayed first for proper layer ordering when displaying connections between qubits and classical bits.
         offset = 0.05
-        for Bidx, cbit in enumerate(displayCircuit.cbits):
+        for Bidx, cbit in enumerate(self.cbits):
             # Display the classical bit labels and a double line to represent their wires. "offset" creates a small spacing between the two plotted lines for each bit to give the double line visual.
-            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+displayCircuit.numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
-            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+displayCircuit.numQubits)+offset, -1*(Bidx+displayCircuit.numQubits)+offset], color='black')
-            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+displayCircuit.numQubits)-offset, -1*(Bidx+displayCircuit.numQubits)-offset], color='black')
+            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+self.numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
+            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)+offset, -1*(Bidx+self.numQubits)+offset], color='black')
+            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)-offset, -1*(Bidx+self.numQubits)-offset], color='black')
 
             # Display each connection using the properties from format_gate
             for Cidx, connection in enumerate(cbit.connections):
-                [connectLabel, size, bbox, arrowprops] = displayCircuit.format_gate(connection)
-                ax.annotate(connectLabel, xy=(cbit.connectPos[Cidx], -1*cbit.connectTo[Cidx]), xytext=(cbit.connectPos[Cidx], -1*(Bidx+displayCircuit.numQubits)), size=size, va='center', ha='center', bbox=bbox, arrowprops=arrowprops)
+                [connectLabel, size, bbox, arrowprops] = self.format_gate(connection)
+                ax.annotate(connectLabel, xy=(cbit.connectPos[Cidx], -1*cbit.connectTo[Cidx]), xytext=(cbit.connectPos[Cidx], -1*(Bidx+self.numQubits)), size=size, va='center', ha='center', bbox=bbox, arrowprops=arrowprops)
 
-        # Display each qubit label and wire.
-        for Qidx, qubit in enumerate(displayCircuit.qubits):
+        # Display each qubit
+        for Qidx, qubit in enumerate(self.qubits):
             # Display the qubit labels and a horizontal line to represent the wire for each qubit's circuit.
             ax.annotate('$Q_%s$'%Qidx, xy=(bitLabelPosition, -1*Qidx), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
             ax.plot([bitLabelPosition, circuitLength], [-1*Qidx, -1*Qidx], color='black')
-        
+
         # Display each qubit connection using the properties from format_gate. These are displayed next for proper layer ordering of connections between qubits.
-        for Qidx, qubit in enumerate(displayCircuit.qubits):
+        for Qidx, qubit in enumerate(self.qubits):
             for Cidx, connection in enumerate(qubit.connections):
-                if connection == 'skip':
-                    continue
-                else:
-                    [connectLabel, size, bbox, arrowprops] = displayCircuit.format_gate(connection)
-                    ax.annotate(connectLabel, xy=(qubit.connectPos[Cidx], -1*qubit.connectTo[Cidx]), xytext=(qubit.connectPos[Cidx], -1*Qidx), size=size, va='center', ha='center', bbox=bbox, arrowprops=arrowprops)
+                [connectLabel, size, bbox, arrowprops] = self.format_gate(connection)
+                ax.annotate(connectLabel, xy=(qubit.connectPos[Cidx], -1*qubit.connectTo[Cidx]), xytext=(qubit.connectPos[Cidx], -1*Qidx), size=size, va='center', ha='center', bbox=bbox, arrowprops=arrowprops)
 
         # Display each qubit gate using the properties from format_gate.
-        for Qidx, qubit in enumerate(displayCircuit.qubits):
+        for Qidx, qubit in enumerate(self.qubits):
             for Gidx, gate in enumerate(qubit.gates):
-                if gate == 'skip':
-                    continue
+                if gate in {'P', 'RX', 'RY', 'RZ', 'U'}:
+                    angles = qubit.gateAngles[Gidx]
+                    [gateLabel, size, bbox, arrowprops] = self.format_gate(gate, angles)
                 else:
-                    if gate in {'P', 'RX', 'RY', 'RZ', 'U'}:
-                        angles = qubit.gateAngles[Gidx]
-                        [gateLabel, size, bbox, arrowprops] = displayCircuit.format_gate(gate, angles)
-                    else:
-                        [gateLabel, size, bbox, arrowprops] = displayCircuit.format_gate(gate)
-                    ax.annotate(gateLabel, xy=(qubit.gatePos[Gidx], -1*Qidx), size=size, va='center', ha='center', bbox=bbox)
+                    [gateLabel, size, bbox, arrowprops] = self.format_gate(gate)
+                ax.annotate(gateLabel, xy=(qubit.gatePos[Gidx], -1*Qidx), size=size, va='center', ha='center', bbox=bbox)
 
         plt.show()
 
         return
     
-    # Run the ciruit 'shots' number of times.
     def run(self, shots, hist=False):
 
         # Get the circuit length
@@ -825,10 +766,6 @@ class Circuit:
 
                 # Skip over barriers since they do not change the circuit's state
                 if gates[0] == 'B':
-                    continue
-
-                # Skip over algorithm identifies. These are used for displaying the circuit only.
-                if any(gate in {'DJ', 'QFT', 'IQFT', 'QPE'} for gate in gates):
                     continue
 
                 # For controlled gates:
@@ -947,7 +884,6 @@ class Circuit:
             plt.bar(labels, counts/shots, align='center')
             plt.title('Histogram of results of %i shots of the quantum circuit'%shots)
             plt.xlabel('Quantum circuit state')
-            plt.xticks(rotation=45)
             plt.gca().set_xticks(labels)
             plt.ylabel('Probability')
             plt.show()

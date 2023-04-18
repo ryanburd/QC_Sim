@@ -63,6 +63,8 @@ def DeutschJozsa(circuit, oracle, constantOracleOutput=0, balancedInputFlips=[])
     for Qidx in range(numQubits-1):
         circuit.H(Qidx)
 
+    circuit.barrier()
+
     return
 
 # Quantum Fourier Transform (QFT): this algorithm converts qubits in the computational basis into the Fourier basis. This is commonly used as a sub-step within other algorithms.
@@ -153,8 +155,12 @@ def QPE(circuit, lambd, numPrecisionQubits=0):
         for repeat in range(2**control):
                 circuit.CP([control], numPrecisionQubits, lambd)
 
+    circuit.barrier()
+
     # Apply the inverse QFT to the precision qubits to convert them back into the computational basis.
     circuit.IQFT(numQubits=numPrecisionQubits)
+
+    circuit.barrier()
 
     return
 
