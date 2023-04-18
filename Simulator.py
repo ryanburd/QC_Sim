@@ -803,6 +803,7 @@ class Circuit:
             plt.bar(labels, counts/shots, align='center')
             plt.title('Histogram of results of %i shots of the quantum circuit'%shots)
             plt.xlabel('Quantum circuit state')
+            plt.xticks(rotation=45)
             plt.gca().set_xticks(labels)
             plt.ylabel('Probability')
             plt.show()
