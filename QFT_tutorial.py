@@ -23,7 +23,7 @@ circuit.measure(range(numQubits))
 circuit.display_circuit()
 
 # Choose the number of shots for the circuit. Run the circuit 'shots' times and obtain the results as a list. Set hist=True to create a histogram of the results.
-shots = 1
+shots = 1024
 results = circuit.run(shots, hist=True)
 
 # You can apply the algorithm using any oracle by accessing Algorithms.py directly if it is imported. In this case, pass the circuit as the only argument to the QFT function. For circuit operations, this is identical to applying the algorithm using the gate syntax used above. Only the syntax for calling the algorithm changes. Use whichever syntax is more intuitive to you.

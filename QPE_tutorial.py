@@ -17,17 +17,13 @@ lambd = 2*np.pi*theta
 circuit.QPE(lambd, numPrecisionQubits)
 
 # Measure each precision qubit.
-circuit.X([0,5])
-circuit.H(5)
-circuit.Z(5)
 circuit.measure(range(numPrecisionQubits))
-circuit.X([0,1,2,3,4,5])
 
 # Display the quantum circuit.
 circuit.display_circuit()
 
 # Choose the number of shots for the circuit. Run the circuit 'shots' times and obtain the results as a list. Set hist=True to create a histogram of the results.
-shots = 1
+shots = 1024
 results = circuit.run(shots, hist=True)
 
 # In this tutorial for using QPE, theta is obviously already known since we provided it when defining lambd. In more useful applications of QPE, theta is not known intially.

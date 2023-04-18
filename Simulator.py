@@ -513,39 +513,7 @@ class Circuit:
     #
     # You may provide the number of qubits to perform the QFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform QFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
     def QFT(self, numQubits=0):
-<<<<<<< HEAD
-
-        # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
-        if numQubits == 0:
-            numQubits = self.numQubits
-        else:
-            pass
-
-        # Get the earliest position available for all qubits involved in the algorithm.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        algorithmStart = max(earliestPositions)
-
-        # Add an algorithm identifier to the qubits' gate lists. This will be used for displaying the circuit only.
-        self.qubits[0].gates.append('QFT,%i'%(numQubits))
-        angles = [None, None, None]
-        self.qubits[0].gateAngles.append(angles)
-        startIdx = len(self.qubits[0].gatePos)
-        self.qubits[0].gatePos.append(algorithmStart)
-        for qubit in range(numQubits):
-            self.qubits[qubit].earliestPos = algorithmStart + 1
-        
-        # Apply the algorithm
         Algorithms.QFT(self, numQubits)
-
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        algorithmEnd = max(earliestPositions)
-        algorithmLength = algorithmEnd - algorithmStart - 1
-        
-        self.qubits[0].gates[startIdx] = self.qubits[0].gates[startIdx] + ',%i'%algorithmLength
-
-=======
-        Algorithms.QFT(self, numQubits)
->>>>>>> parent of 1918c04 (Reformating the display of preprogrammed algorithms)
         return
     
     # Inverse Quantum Fourier Transform (IQFT): this algorithm converts qubits in the Fourier basis into the computational basis. This is commonly used as a sub-step within other algorithms.
@@ -561,45 +529,7 @@ class Circuit:
     #
     # You may provide the number of qubits to perform the QPE on using numPrecisionQubits. To perform QPE on all qubits within the circuit (minus the final qubit which represents |psi>), you may leave this argument as the default, and the function will get the number of qubits in the circuit.
     def QPE(self, lambd, numPrecisionQubits=0):
-<<<<<<< HEAD
-
-        # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
-        if numPrecisionQubits == 0:
-            numPrecisionQubits = self.numQubits-1
-        else:
-            pass
-
-        numQubits = numPrecisionQubits + 1
-
-        # Get the earliest position available for all qubits involved in the algorithm.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        position = max(earliestPositions)
-
-        # Add an algorithm identifier to the qubits' gate lists. This will be used for displaying the circuit only.
-        for qubit in range(numQubits):
-            self.qubits[qubit].gates.append('QPE')
-            angles = [None, None, None]
-            self.qubits[qubit].gateAngles.append(angles)
-            self.qubits[qubit].gatePos.append(position)
-            self.qubits[qubit].earliestPos = position + 1
-        
-        # Apply the algorithm
         Algorithms.QPE(self, lambd, numPrecisionQubits)
-
-        # Repeat the procedure from above to signal the end of the algorithm. Again, this is for display purposes only.
-        earliestPositions = [self.qubits[idx].earliestPos for idx in range(numQubits)]
-        position = max(earliestPositions)
-
-        for qubit in range(numQubits):
-            self.qubits[qubit].gates.append('QPE')
-            angles = [None, None, None]
-            self.qubits[qubit].gateAngles.append(angles)
-            self.qubits[qubit].gatePos.append(position)
-            self.qubits[qubit].earliestPos = position + 1
-
-=======
-        Algorithms.QPE(self, lambd, numPrecisionQubits)
->>>>>>> parent of 1918c04 (Reformating the display of preprogrammed algorithms)
         return
 
     # Assign the gate label, box, and connection property to be used for displaying the circuit
@@ -664,17 +594,6 @@ class Circuit:
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-<<<<<<< HEAD
-        # Create a deep copy of the circuit that will be edited for display purposes only. Within the circuit deep copy, collapse any algorithm segments into one multi-qubit gate and update the position of all subsequent gates.
-        displayCircuit = deepcopy(self)
-        for Qidx, qubit in enumerate(displayCircuit.qubits):
-            for Gidx, gate in enumerate(qubit.gates):
-                if ',' in gate:
-                    [algorithmType, qubitsInvolved, algorithmLength] = gate.split(',')
-                    
-
-=======
->>>>>>> parent of 1918c04 (Reformating the display of preprogrammed algorithms)
         # Get the circuit length
         circuitLength = 0
         for qubit in self.qubits:
