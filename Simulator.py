@@ -3,6 +3,7 @@
 import Algorithms
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
 from itertools import product as CartesianProduct
 
 # Define common matrices used for gate operations. Since the rotation matrices need to receive angles, these matrices are packaged into a function instead of a dictionary, though this function essential acts as a dictionary.
@@ -531,9 +532,15 @@ class Circuit:
     def QPE(self, lambd, numPrecisionQubits=0):
         Algorithms.QPE(self, lambd, numPrecisionQubits)
         return
+    
+    def Grover(self, numQubits=0, oracle='example'):
+        Algorithms.Grover(self, numQubits, oracle)
+        return
 
     # Assign the gate label, box, and connection property to be used for displaying the circuit
-    def format_gate(self, gate, angles=[0, 0, 0]):
+    def format_gate(self, gate, xy, ax, angles=[0, 0, 0]):
+        x, y = xy
+        
         # User-defined phase gate
         if gate == 'P':
             [theta, phi, lambd] = angles
@@ -582,10 +589,21 @@ class Circuit:
         else:
             gateLabel = gate
             size = 15
-            bbox=dict(boxstyle='square', facecolor='white')
             arrowprops=dict()
+
+            xData = x
+            yData = y
+            xDisplay, yDisplay = ax.transData.transform([xData,yData])
+            wDisplay = size*2
+            hDisplay = size*2
+            xMinDisplay, yMinDisplay = xDisplay-wDisplay/2, yDisplay-hDisplay/2
+            xMinData, yMinData = ax.transData.inverted().transform((xMinDisplay,yMinDisplay))
+            xMaxData, yMaxData = ax.transData.inverted().transform((xMinDisplay+wDisplay,yMinDisplay+hDisplay))
+            wData = xMaxData - xMinData
+            hData = yMaxData - yMinData
+            gateBox = Rectangle((xMinData, yMinData), wData, hData, fc='white', ec='black')
         
-        return [gateLabel, size, bbox, arrowprops]
+        return [gateLabel, size, arrowprops, gateBox]
 
     # Create a figure of the circuit.
     def display_circuit(self):
@@ -636,12 +654,14 @@ class Circuit:
         # Display each qubit gate using the properties from format_gate.
         for Qidx, qubit in enumerate(self.qubits):
             for Gidx, gate in enumerate(qubit.gates):
+                xy = (qubit.gatePos[Gidx], -1*Qidx)
                 if gate in {'P', 'RX', 'RY', 'RZ', 'U'}:
                     angles = qubit.gateAngles[Gidx]
                     [gateLabel, size, bbox, arrowprops] = self.format_gate(gate, angles)
                 else:
-                    [gateLabel, size, bbox, arrowprops] = self.format_gate(gate)
-                ax.annotate(gateLabel, xy=(qubit.gatePos[Gidx], -1*Qidx), size=size, va='center', ha='center', bbox=bbox)
+                    [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax)
+                ax.annotate(gateLabel, xy=xy, size=size, va='center', ha='center')
+                ax.add_patch(gateBox)
 
         plt.show()
 
