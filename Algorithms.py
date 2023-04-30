@@ -164,6 +164,47 @@ def QPE(circuit, lambd, numPrecisionQubits=0):
 
     return
 
+def expGroverOracle(circuit):
+
+    # For this 3 qubit oracle, apply controlled-Z gates to the last qubit controlled by the other 2 qubits. This marks the |101> and |110> states.
+    circuit.CZ([0], 2)
+    circuit.CZ([1], 2)
+
+    return
+
+def Grover(circuit, numQubits=0, oracle='example'):
+
+    # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
+    if numQubits == 0:
+        numQubits = circuit.numQubits
+    else:
+        pass
+
+    # Apply Hadamard gates to each qubit to create a superposition of all possible states.
+    circuit.H(range(numQubits))
+
+    circuit.barrier()
+
+    # Apply the oracle which marks the selected states.
+
+    if oracle == 'example':
+        expGroverOracle(circuit)
+    else:
+        oracle(circuit)
+    
+    circuit.barrier()
+
+    # Amplify the marked states. Apply a Hadamard and Pauli X gate to each qubit. Then control a Z gate on the last qubit with all remaining qubits acting as controls for the one Z gate. Apply a Pauli X and Hadamard gate to each qubit.
+    circuit.H(range(numQubits))
+    circuit.X(range(numQubits))
+    circuit.CZ(range(numQubits-1), numQubits-1)
+    circuit.X(range(numQubits))
+    circuit.H(range(numQubits))
+
+    circuit.barrier()
+
+    return
+
 def main():
     return
 

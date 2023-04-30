@@ -3,8 +3,9 @@
 import Algorithms
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle, Ellipse
 from itertools import product as CartesianProduct
+import tkinter
 
 # Define common matrices used for gate operations. Since the rotation matrices need to receive angles, these matrices are packaged into a function instead of a dictionary, though this function essential acts as a dictionary.
 def gateMatrix(gateType, angles=[0, 0, 0]):
@@ -461,14 +462,14 @@ class Circuit:
     def barrier(self):
 
         # Append a barrier to the first qubit. Use the last qubit as the connector to extend the barrier across the entire circuit. The max earliest position for all qubits is the position of the barrier. All qubits' earliest position is then updated to the position after the barrier.
-        self.qubits[0].gates.append('B')
+        self.qubits[-1].gates.append('B')
         angles = [None, None, None]
-        self.qubits[0].gateAngles.append(angles)
-        self.qubits[-1].connections.append('B')
-        self.qubits[-1].connectTo.append(0)
+        self.qubits[-1].gateAngles.append(angles)
+        # self.qubits[-1].connections.append('B')
+        # self.qubits[-1].connectTo.append(0)
         earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
-        self.qubits[0].gatePos.append(earliestPosition)
-        self.qubits[-1].connectPos.append(earliestPosition)
+        self.qubits[-1].gatePos.append(earliestPosition)
+        # self.qubits[-1].connectPos.append(earliestPosition)
         for qubit in self.qubits:
             qubit.earliestPos = earliestPosition + 1
 
@@ -537,79 +538,129 @@ class Circuit:
         Algorithms.Grover(self, numQubits, oracle)
         return
 
+    def gate_size(self, xy, sizeX, sizeY, ax):
+        xData, yData = xy
+        xDisplay, yDisplay = ax.transData.transform([xData,yData])
+        wDisplay = sizeX*2
+        hDisplay = sizeY*2
+        xMinDisplay, yMinDisplay = xDisplay-wDisplay/2, yDisplay-hDisplay/2
+        xMinData, yMinData = ax.transData.inverted().transform((xMinDisplay,yMinDisplay))
+        xMaxData, yMaxData = ax.transData.inverted().transform((xMinDisplay+wDisplay,yMinDisplay+hDisplay))
+        wData = xMaxData - xMinData
+        hData = yMaxData - yMinData
+
+        return [(xMinData, yMinData), wData, hData]
+
     # Assign the gate label, box, and connection property to be used for displaying the circuit
-    def format_gate(self, gate, xy, ax, angles=[0, 0, 0]):
-        x, y = xy
-        
+    def format_gate(self, gate, xy, ax, zorder, angles=[0, 0, 0]):
+
         # User-defined phase gate
         if gate == 'P':
             [theta, phi, lambd] = angles
-            gateLabel = 'P\n(%s)'%str(round(theta, 2))
+            thetaStr = str(round(theta, 2))
+            gateLabel = 'P\n(%s)'%thetaStr
             size = 10
-            bbox=dict(boxstyle='square', facecolor='white')
+            textLen = len(thetaStr)
+            if textLen == 1: textLen += 1
+            else: textLen -= 1
+            sizeX = size*textLen*0.8
+            sizeY = size*2
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
             arrowprops=dict()
         # Rotation gates
         elif gate in {'RX', 'RY', 'RZ'}:
             [theta, phi, lambd] = angles
             letters = list(gate)
-            gateLabel = '$%s_%s$\n(%s)'%(letters[0], letters[1], str(round(theta, 2)))
+            thetaStr = str(round(theta, 2))
+            gateLabel = '$%s_%s$\n(%s)'%(letters[0], letters[1], thetaStr)
             size = 10
-            bbox=dict(boxstyle='square', facecolor='white')
+            textLen = len(thetaStr)
+            if textLen == 1: textLen += 1
+            else: textLen -= 1
+            sizeX = size*textLen*0.8
+            sizeY = size*2
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
             arrowprops=dict()
         # U gates
         elif gate == 'U':
             [theta, phi, lambd] = angles
-            gateLabel = 'U\n(%s,%s,%s)'%(str(round(theta, 2)), str(round(phi, 2)), str(round(lambd, 2)))
+            thetaStr = str(round(theta, 2))
+            phiStr = str(round(phi, 2))
+            lambdStr = str(round(lambd, 2))
+            gateLabel = 'U\n(%s,%s,%s)'%(thetaStr, phiStr, lambdStr)
             size = 10
-            bbox=dict(boxstyle='square', facecolor='white')
+            if '.' in thetaStr:
+                thetaStr = thetaStr.replace('.','')
+            if '.' in phiStr:
+                phiStr = phiStr.replace('.','')
+            if '.' in lambdStr:
+                lambdStr = lambdStr.replace('.','')
+            textLen = len(thetaStr+phiStr+lambdStr)+2
+            sizeX = size*textLen*0.55
+            sizeY = size*2
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
             arrowprops=dict()
         # SWAP gates
         elif gate == 'SWAP':
             gateLabel = 'x'
             size = 25
-            bbox=dict(boxstyle='square', pad=0, facecolor='none', edgecolor='none')
+            sizeX = size
+            sizeY = size
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='none', ec='none', zorder=zorder)
             arrowprops=dict(arrowstyle="-", edgecolor='black', linewidth=2)
         # Controls in controlled-gates
         elif gate == 'C':
             gateLabel = ' '
-            size = 5
-            bbox=dict(boxstyle='circle', facecolor='black', edgecolor='black')
+            size = 8
+            sizeX = size
+            sizeY = size
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            gateBox = Ellipse(xy, gateWidth, gateHeight, fc='black', ec='black', zorder=zorder)
             arrowprops=dict(arrowstyle="-", edgecolor='black', linewidth=2)
         # Output in measurement gates
         elif gate == 'O':
             gateLabel = ' '
-            size = 10
-            bbox=dict(boxstyle='circle', facecolor='none', edgecolor='black', linewidth=2)
+            size = 12
+            sizeX = size
+            sizeY = size
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            gateBox = Ellipse(xy, gateWidth, gateHeight, fc='none', ec='black', lw=2, zorder=zorder)
             arrowprops=dict(arrowstyle="<|-", edgecolor='black', linewidth=2)
         elif gate == 'B':
             gateLabel = ' '
             size = 10
-            bbox=dict(boxstyle='square', facecolor='gray', edgecolor='none')
-            arrowprops=dict(arrowstyle="-", edgecolor='grey', linewidth=9)
+            sizeX = size
+            sizeY = size
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            gateBox = Rectangle(gateXY, gateWidth, gateHeight+self.numQubits-1, fc='gray', ec='none', zorder=zorder)
+            arrowprops=dict()
         else:
             gateLabel = gate
             size = 15
+            sizeX = size
+            sizeY = size
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
             arrowprops=dict()
-
-            xData = x
-            yData = y
-            xDisplay, yDisplay = ax.transData.transform([xData,yData])
-            wDisplay = size*2
-            hDisplay = size*2
-            xMinDisplay, yMinDisplay = xDisplay-wDisplay/2, yDisplay-hDisplay/2
-            xMinData, yMinData = ax.transData.inverted().transform((xMinDisplay,yMinDisplay))
-            xMaxData, yMaxData = ax.transData.inverted().transform((xMinDisplay+wDisplay,yMinDisplay+hDisplay))
-            wData = xMaxData - xMinData
-            hData = yMaxData - yMinData
-            gateBox = Rectangle((xMinData, yMinData), wData, hData, fc='white', ec='black')
         
         return [gateLabel, size, arrowprops, gateBox]
 
     # Create a figure of the circuit.
     def display_circuit(self):
 
-        # Create the figure
-        fig = plt.figure()
+        # Get the screen size and dpi to scale the figure window.
+        win = tkinter.Tk()
+        screenWidth = win.winfo_screenwidth()
+        screenHeight = win.winfo_screenheight()
+        dpi = win.winfo_fpixels('1i')
+        win.withdraw()
+
+        # Create the figure.
+        fig = plt.figure(figsize=(screenWidth/dpi, screenHeight/dpi))
         ax = fig.add_subplot(111)
 
         # Get the circuit length
@@ -626,42 +677,56 @@ class Circuit:
         ax.set(xlim=(0, circuitLength+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
         ax.set_axis_off()
 
+        # Begin the circuit element rendering order at 1. This will be increased when necessary to ensure proper display ordering of the circuit elements.
+        zorder = 1
+
         # Display each classical bit. These are displayed first for proper layer ordering when displaying connections between qubits and classical bits.
         offset = 0.05
         for Bidx, cbit in enumerate(self.cbits):
             # Display the classical bit labels and a double line to represent their wires. "offset" creates a small spacing between the two plotted lines for each bit to give the double line visual.
-            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+self.numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
-            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)+offset, -1*(Bidx+self.numQubits)+offset], color='black')
-            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)-offset, -1*(Bidx+self.numQubits)-offset], color='black')
+            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)+offset, -1*(Bidx+self.numQubits)+offset], color='black', zorder=zorder)
+            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)-offset, -1*(Bidx+self.numQubits)-offset], color='black', zorder=zorder)
+            zorder += 1
+            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+self.numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'), zorder=zorder)
 
             # Display each connection using the properties from format_gate
             for Cidx, connection in enumerate(cbit.connections):
-                [connectLabel, size, bbox, arrowprops] = self.format_gate(connection)
-                ax.annotate(connectLabel, xy=(cbit.connectPos[Cidx], -1*cbit.connectTo[Cidx]), xytext=(cbit.connectPos[Cidx], -1*(Bidx+self.numQubits)), size=size, va='center', ha='center', bbox=bbox, arrowprops=arrowprops)
+                xy = (cbit.connectPos[Cidx], -1*(Bidx+self.numQubits))
+                [connectLabel, size, arrowprops, gateBox] = self.format_gate(connection, xy, ax, zorder)
+                ax.add_patch(gateBox)
+                ax.annotate(connectLabel, xy=(cbit.connectPos[Cidx], -1*cbit.connectTo[Cidx]), xytext=(cbit.connectPos[Cidx], -1*(Bidx+self.numQubits)), size=size, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
 
-        # Display each qubit
+        # Display the qubit circuit.
+
+        # Display each qubit label and wire.
         for Qidx, qubit in enumerate(self.qubits):
             # Display the qubit labels and a horizontal line to represent the wire for each qubit's circuit.
-            ax.annotate('$Q_%s$'%Qidx, xy=(bitLabelPosition, -1*Qidx), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'))
-            ax.plot([bitLabelPosition, circuitLength], [-1*Qidx, -1*Qidx], color='black')
+            ax.plot([bitLabelPosition, circuitLength], [-1*Qidx, -1*Qidx], color='black', zorder=zorder)
+            zorder += 1
+            ax.annotate('$Q_%s$'%Qidx, xy=(bitLabelPosition, -1*Qidx), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'), zorder=zorder)
+            
+        zorder += 1
 
         # Display each qubit connection using the properties from format_gate. These are displayed next for proper layer ordering of connections between qubits.
         for Qidx, qubit in enumerate(self.qubits):
             for Cidx, connection in enumerate(qubit.connections):
-                [connectLabel, size, bbox, arrowprops] = self.format_gate(connection)
-                ax.annotate(connectLabel, xy=(qubit.connectPos[Cidx], -1*qubit.connectTo[Cidx]), xytext=(qubit.connectPos[Cidx], -1*Qidx), size=size, va='center', ha='center', bbox=bbox, arrowprops=arrowprops)
-
+                xy = (qubit.connectPos[Cidx], -1*Qidx)
+                [connectLabel, size, arrowprops, gateBox] = self.format_gate(connection, xy, ax, zorder)
+                ax.add_patch(gateBox)
+                ax.annotate(connectLabel, xy=(qubit.connectPos[Cidx], -1*qubit.connectTo[Cidx]), xytext=(qubit.connectPos[Cidx], -1*Qidx), size=size, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
+        zorder += 1
+        
         # Display each qubit gate using the properties from format_gate.
         for Qidx, qubit in enumerate(self.qubits):
             for Gidx, gate in enumerate(qubit.gates):
                 xy = (qubit.gatePos[Gidx], -1*Qidx)
                 if gate in {'P', 'RX', 'RY', 'RZ', 'U'}:
                     angles = qubit.gateAngles[Gidx]
-                    [gateLabel, size, bbox, arrowprops] = self.format_gate(gate, angles)
+                    [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder, angles)
                 else:
-                    [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax)
-                ax.annotate(gateLabel, xy=xy, size=size, va='center', ha='center')
+                    [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder)
                 ax.add_patch(gateBox)
+                ax.annotate(gateLabel, xy=xy, size=size, va='center', ha='center', zorder=zorder)
 
         plt.show()
 
@@ -704,7 +769,7 @@ class Circuit:
                 gates = qubit_gates[pos]
 
                 # Skip over barriers since they do not change the circuit's state
-                if gates[0] == 'B':
+                if gates[-1] == 'B':
                     continue
 
                 # For controlled gates:
