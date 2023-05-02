@@ -60,9 +60,16 @@ class Qubit:
         self.gates = []
         self.gatePos = []
         self.gateAngles = []
+
         self.connections = []
         self.connectTo = []
         self.connectPos = []
+
+        self.algorithms = []
+        self.algNumQubits = []
+        self.algStart = []
+        self.algEnd = []
+
         self.earliestPos = 1
 
 # Creates a classical bit object, which stores the bit's state (0 or 1) and all connections the bit is a part of (e.g. as storage for the result of measurement on a qubit).
@@ -465,11 +472,8 @@ class Circuit:
         self.qubits[-1].gates.append('B')
         angles = [None, None, None]
         self.qubits[-1].gateAngles.append(angles)
-        # self.qubits[-1].connections.append('B')
-        # self.qubits[-1].connectTo.append(0)
         earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
         self.qubits[-1].gatePos.append(earliestPosition)
-        # self.qubits[-1].connectPos.append(earliestPosition)
         for qubit in self.qubits:
             qubit.earliestPos = earliestPosition + 1
 
@@ -522,7 +526,28 @@ class Circuit:
     #
     # You may provide the number of qubits to perform the IQFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
     def IQFT(self, numQubits=0):
+
+        if numQubits == 0:
+            numQubits = self.numQubits
+
+        # Append a barrier to the first qubit. Use the last qubit as the connector to extend the barrier across the entire circuit. The max earliest position for all qubits is the position of the barrier. All qubits' earliest position is then updated to the position after the barrier.
+        self.qubits[-1].algorithms.append('IQFT')
+        self.qubits[-1].algNumQubits.append(numQubits)
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[-1].algStart.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
         Algorithms.IQFT(self, numQubits)
+
+        # Append a barrier to the first qubit. Use the last qubit as the connector to extend the barrier across the entire circuit. The max earliest position for all qubits is the position of the barrier. All qubits' earliest position is then updated to the position after the barrier.
+        self.qubits[-1].algorithms.append('IQFT')
+        self.qubits[-1].algNumQubits.append(numQubits)
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[-1].algEnd.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
         return
     
     # Quantum phase estimation (QPE): this algorithm estimates the angle theta within the eigenvalue problem U|psi> = e^(2pi*i*theta)|psi>. The more qubits are included in the algorithm, the higher the precision of the algorithm (at the expense of higher computational cost). This is commonly used as a sub-step within other algorithms.
@@ -648,6 +673,18 @@ class Circuit:
             arrowprops=dict()
         
         return [gateLabel, size, arrowprops, gateBox]
+    
+    def format_algorithm(self, algorithm, numQubits, xy, ax, zorder):
+
+        algLabel = algorithm
+        size = 10
+        sizeX = size*len(algorithm)
+        sizeY = size
+        algXY, algWidth, algHeight = self.gate_size(xy, sizeX, sizeY, ax)
+        algBox = Rectangle(algXY, algWidth, algHeight+numQubits-1, fc='white', ec='black', zorder=zorder)
+        arrowprops=dict()
+
+        return [algLabel, size, arrowprops, algBox]
 
     # Create a figure of the circuit.
     def display_circuit(self):
@@ -675,58 +712,91 @@ class Circuit:
         bitLabelPosition = 0
         bitLabelFontSize = 15
         ax.set(xlim=(0, circuitLength+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
-        ax.set_axis_off()
 
-        # Begin the circuit element rendering order at 1. This will be increased when necessary to ensure proper display ordering of the circuit elements.
-        zorder = 1
+        # Begin the circuit element rendering order at 3. This will be increased when necessary to ensure proper display ordering of the circuit elements.
+        zorder = 3
+
+        maxGatePos = max([max(qubit.gatePos) for qubit in self.qubits])
+        position = 1
+        posOffset = 0
+        algorithmOn = False
+        algInitiator = None
+        while position <= maxGatePos:
+
+            if algorithmOn:
+                if position in self.qubits[algInitiator].algEnd:
+                    algorithmOn = False
+                posOffset += 1
+            else:
+                for Qidx, qubit in reversed(list(enumerate(self.qubits))):
+
+                    xy = (position-posOffset, -1*Qidx)
+
+                    if position in qubit.algStart:
+                        algorithmOn = True
+                        algInitiator = Qidx
+                        Aidx = qubit.algStart.index(position)
+                        alg = qubit.algorithms[Aidx]
+                        algNumQubits = qubit.algNumQubits[Aidx]
+                        [gateLabel, size, arrowprops, gateBox] = self.format_algorithm(alg, algNumQubits, xy, ax, zorder)
+                        ax.add_patch(gateBox)
+                        ax.annotate(gateLabel, xy=xy, size=size, va='center', ha='center', zorder=zorder)
+                        break
+
+                    if position in qubit.connectPos:
+                        zorder -= 1
+                        Cidx = qubit.connectPos.index(position)
+                        connection = qubit.connections[Cidx]
+                        [connectLabel, size, arrowprops, gateBox] = self.format_gate(connection, xy, ax, zorder)
+                        ax.add_patch(gateBox)
+                        ax.annotate(connectLabel, xy=(position, -1*qubit.connectTo[Cidx]), xytext=xy, size=size, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
+                        zorder += 1
+                    
+                    if position in qubit.gatePos:
+                        Gidx = qubit.gatePos.index(position)
+                        gate = qubit.gates[Gidx]
+                        angles = qubit.gateAngles[Gidx]
+                        if gate in {'P', 'RX', 'RY', 'RZ', 'U'}:
+                            angles = qubit.gateAngles[Gidx]
+                            [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder, angles)
+                        else:
+                            [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder)
+                        ax.add_patch(gateBox)
+                        ax.annotate(gateLabel, xy=xy, size=size, va='center', ha='center', zorder=zorder)
+
+                # Display each classical bit connection using the properties from format_gate
+                for Bidx, cbit in reversed(list(enumerate(self.cbits))):
+
+                    xy = (position-posOffset, -1*(Bidx+self.numQubits))
+
+                    if position in cbit.connectPos:
+                        zorder -= 1
+                        Cidx = cbit.connectPos.index(position)
+                        connection = cbit.connections[Cidx]
+                        [connectLabel, size, arrowprops, gateBox] = self.format_gate(connection, xy, ax, zorder)
+                        ax.add_patch(gateBox)
+                        ax.annotate(connectLabel, xy=(xy[0], -1*cbit.connectTo[Cidx]), xytext=xy, size=size, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
+                        zorder += 1
+
+            position += 1
 
         # Display each classical bit. These are displayed first for proper layer ordering when displaying connections between qubits and classical bits.
         offset = 0.05
         for Bidx, cbit in enumerate(self.cbits):
             # Display the classical bit labels and a double line to represent their wires. "offset" creates a small spacing between the two plotted lines for each bit to give the double line visual.
-            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)+offset, -1*(Bidx+self.numQubits)+offset], color='black', zorder=zorder)
-            ax.plot([bitLabelPosition, circuitLength], [-1*(Bidx+self.numQubits)-offset, -1*(Bidx+self.numQubits)-offset], color='black', zorder=zorder)
-            zorder += 1
-            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+self.numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'), zorder=zorder)
-
-            # Display each connection using the properties from format_gate
-            for Cidx, connection in enumerate(cbit.connections):
-                xy = (cbit.connectPos[Cidx], -1*(Bidx+self.numQubits))
-                [connectLabel, size, arrowprops, gateBox] = self.format_gate(connection, xy, ax, zorder)
-                ax.add_patch(gateBox)
-                ax.annotate(connectLabel, xy=(cbit.connectPos[Cidx], -1*cbit.connectTo[Cidx]), xytext=(cbit.connectPos[Cidx], -1*(Bidx+self.numQubits)), size=size, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
-
-        # Display the qubit circuit.
+            ax.plot([bitLabelPosition, circuitLength-posOffset], [-1*(Bidx+self.numQubits)+offset, -1*(Bidx+self.numQubits)+offset], color='black', zorder=1)
+            ax.plot([bitLabelPosition, circuitLength-posOffset], [-1*(Bidx+self.numQubits)-offset, -1*(Bidx+self.numQubits)-offset], color='black', zorder=1)
+            ax.annotate('$C_%s$'%Bidx, xy=(bitLabelPosition, -1*(Bidx+self.numQubits)), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'), zorder=2)
 
         # Display each qubit label and wire.
         for Qidx, qubit in enumerate(self.qubits):
             # Display the qubit labels and a horizontal line to represent the wire for each qubit's circuit.
-            ax.plot([bitLabelPosition, circuitLength], [-1*Qidx, -1*Qidx], color='black', zorder=zorder)
-            zorder += 1
-            ax.annotate('$Q_%s$'%Qidx, xy=(bitLabelPosition, -1*Qidx), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'), zorder=zorder)
-            
-        zorder += 1
+            ax.plot([bitLabelPosition, circuitLength-posOffset], [-1*Qidx, -1*Qidx], color='black', zorder=1)
+            ax.annotate('$Q_%s$'%Qidx, xy=(bitLabelPosition, -1*Qidx), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'), zorder=2)
 
-        # Display each qubit connection using the properties from format_gate. These are displayed next for proper layer ordering of connections between qubits.
-        for Qidx, qubit in enumerate(self.qubits):
-            for Cidx, connection in enumerate(qubit.connections):
-                xy = (qubit.connectPos[Cidx], -1*Qidx)
-                [connectLabel, size, arrowprops, gateBox] = self.format_gate(connection, xy, ax, zorder)
-                ax.add_patch(gateBox)
-                ax.annotate(connectLabel, xy=(qubit.connectPos[Cidx], -1*qubit.connectTo[Cidx]), xytext=(qubit.connectPos[Cidx], -1*Qidx), size=size, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
-        zorder += 1
-        
-        # Display each qubit gate using the properties from format_gate.
-        for Qidx, qubit in enumerate(self.qubits):
-            for Gidx, gate in enumerate(qubit.gates):
-                xy = (qubit.gatePos[Gidx], -1*Qidx)
-                if gate in {'P', 'RX', 'RY', 'RZ', 'U'}:
-                    angles = qubit.gateAngles[Gidx]
-                    [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder, angles)
-                else:
-                    [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder)
-                ax.add_patch(gateBox)
-                ax.annotate(gateLabel, xy=xy, size=size, va='center', ha='center', zorder=zorder)
+        # Reset diagram xlim with the actual circuit length, removing space when ignoring gates within algorithms
+        ax.set(xlim=(0, circuitLength-posOffset+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
+        ax.set_axis_off()
 
         plt.show()
 
@@ -770,6 +840,8 @@ class Circuit:
 
                 # Skip over barriers since they do not change the circuit's state
                 if gates[-1] == 'B':
+                    continue
+                if 'IQFT' in gates[-1]:
                     continue
 
                 # For controlled gates:
