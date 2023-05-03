@@ -2,23 +2,25 @@
 
 ################################################################################
 
-# Import the QPU simulator which creates the quantum circuit and contains all gate operations. Import IQFT from Algorithms if you want to access the algorithm directly, rather than through QPUsimulator. Note this is only a syntax difference when calling the algorithm; the circuit operation will be exactly the same for either method. Import numpy for using np.pi.
+# Import the QPU simulator which creates the quantum circuit and contains all gate operations.
+# Import IQFT from Algorithms if you want to access the algorithm directly, rather than through QPUsimulator. Computationally, using the algorithm through Simulator.py or Algorithms.py is the same. When displaying the circuit, Simulator.py simplifies the diagram to show a general "IQFT" block over all the qubits involved to represent the algorithm; Algorithms.py shows all the individual gates completed in the algorithm.
+# Import numpy for using np.pi.
 import Simulator as QPU
 from Algorithms import IQFT
 import numpy as np
 
-# Create a quantum circuit with a chosen number of qubits. The same number of classica bits will be created for qubit measurement output. The output of each qubit is stored in its similarly indexed classical bit.
+# Create a quantum circuit with a chosen number of qubits. The same number of classical bits will be created for qubit measurement output. The output of each qubit is stored in its similarly indexed classical bit.
 numQubits = 3
 circuit = QPU.Circuit(numQubits)
 
 # Initialize the circuit to a state of your choosing in the Fourier basis. For example, the state |5> = |101> in the Fourier basis is prepared by applying an H to all qubits and then the phases 5pi/4, 5pi/2, and 5pi, respectively.
-circuit.H([0, 1, 2])
+circuit.H(range(numQubits))
 circuit.P(0, theta=5*np.pi/4)
 circuit.P(1, theta=5*np.pi/2)
 circuit.P(2, theta=5*np.pi)
 
-# To apply the algorithm to your circuit, you can apply it just as you would a qubit gate. You may provide the number of qubits to perform the IQFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default by passing nothing, and the function will get the number of qubits in the circuit.
-circuit.IQFT()
+# To apply the algorithm to your circuit, you can apply it just as you would a qubit gate. You may provide the qubit indices to perform the IQFT on as a list using algQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default by passing nothing.
+circuit.IQFT(algQubits=range(numQubits))
 
 # Measure each input qubit. 
 circuit.measure(range(numQubits))
@@ -30,16 +32,17 @@ circuit.display_circuit()
 shots = 1024
 results = circuit.run(shots, hist=True)
 
-# You can apply the algorithm using any oracle by accessing Algorithms.py directly if it is imported. In this case, pass the circuit as the only argument to the IQFT function. For circuit operations, this is identical to applying the algorithm using the gate syntax used above. Only the syntax for calling the algorithm changes. Use whichever syntax is more intuitive to you.
+# If you would like to see all the gates performed by the algorithm, apply the IQFT directly through Algorithms.py. Note: the function IQFT was imported from Algorithms.py above, so we can use this function directly now.
+# Computatinally, this method and the method above are exactly the same.
 numQubits = 3
 circuit = QPU.Circuit(numQubits)
 
-circuit.H([0, 1, 2])
+circuit.H(range(numQubits))
 circuit.P(0, theta=5*np.pi/4)
 circuit.P(1, theta=5*np.pi/2)
 circuit.P(2, theta=5*np.pi)
 
-IQFT(circuit)
+IQFT(circuit, range(numQubits))
 
 for qubit in range(numQubits):
     circuit.measure(qubit)

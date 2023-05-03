@@ -102,32 +102,32 @@ def QFT(circuit, numQubits=0):
 
 # Inverse Quantum Fourier Transform (IQFT): this algorithm converts qubits in the Fourier basis into the computational basis. This is commonly used as a sub-step within other algorithms.
 #
-# You may provide the number of qubits to perform the IQFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
-def IQFT(circuit, numQubits=0):
+# You may provide the qubit indices to perform the IQFT on using algQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default, and the function will use all the qubits in the circuit.
+def IQFT(circuit, algQubits=None):
 
-    # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
-    if numQubits == 0:
-        numQubits = circuit.numQubits
-    else:
-        pass
+    # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+    if algQubits == None:
+        algQubits = list(range(circuit.numQubits))
+    numQubits = len(algQubits)
 
     # Swap the qubit order. Conversion between the computational and Fourier bases reverses the qubit order of significance.
-    for qubit in range(numQubits):
 
-        # If there is only one unswapped qubit left in the circuit, this qubit's position in the order will not change. End the loop.
-        if qubit == numQubits-qubit-1:
+    # First, create a list of the qubit indices reversed.
+    reversedQubits = list(reversed(algQubits))
+
+    # Loop over the qubits to match up each qubit with its SWAP partner.
+    for Qidx, qubit in enumerate(algQubits):
+
+        # If current qubit's index is greater than the qubit's index from the reversed list, all qubits have been swapped. If the current qubit's index equals the qubit's index in the reversed list, this qubit will not have its order changed. For both cases, all SWAPs have been completed, so end the loop.
+        if qubit >= reversedQubits[Qidx]:
             break
 
-        # If the qubit number exceeds half the total number of qubits, all qubits have now been swapped. End the loop.
-        if qubit >= 0.5*numQubits:
-            break
-
-        # Swap the current qubit with the last unswapped qubit.
-        circuit.SWAP(qubit, numQubits-qubit-1)
+        # Swap the current qubit with the last unswapped qubit (which will have the same list index as the algQubits list).
+        circuit.SWAP(qubit, reversedQubits[Qidx])
 
     # Start with the least significant qubit. Turn the qubit the appropriate angle using controlled-P gates. Apply controlled-P gates with the current qubit as the target and all other qubits with lower index as control qubits. Theta starts at -pi/2, and is halved with each successive controlled-P gate applied to the target, ending at -pi/2^n, where 'n' is the number of controlled-P gates to be applied to the target. Apply an H gate to convert the qubit into the computational basis.
-    for qubit in range(numQubits):
-        for control in range(qubit-1, -1, -1):
+    for qubit in algQubits:
+        for control in range(qubit-1, algQubits[0]-1, -1):
             circuit.CP([control], qubit, theta=-np.pi/2**(qubit-control))
         circuit.H(qubit)
     

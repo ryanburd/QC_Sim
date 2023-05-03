@@ -7,7 +7,7 @@ from matplotlib.patches import Rectangle, Ellipse
 from itertools import product as CartesianProduct
 import tkinter
 
-# Define common matrices used for gate operations. Since the rotation matrices need to receive angles, these matrices are packaged into a function instead of a dictionary, though this function essential acts as a dictionary.
+# Define common matrices used for gate operations. Since the rotation matrices need to receive angles, these matrices are packaged into a function instead of a dictionary, though this function essentially acts as a dictionary.
 def gateMatrix(gateType, angles=[0, 0, 0]):
     [theta, phi, lambd] = angles
     if gateType == 'I':
@@ -53,33 +53,43 @@ def gateMatrix(gateType, angles=[0, 0, 0]):
         return np.array([[0, 0],
                          [0, 1]])
 
-# Creates a qubit object, which stores all gates applied to the qubit and all connections the qubit is a part of (e.g. as a control for another target qubit's gate).
+# Creates a qubit object, which stores all gates applied to the qubit, all connections the qubit is a part of (e.g. as a control for another target qubit's gate), and all algorithms that the qubit initiates. Note: while multiple qubits will be involved in an algorithm, only the highest index qubit inolved will receive the algorithm (and additional properties) appended to its lists. For circuit display purposes, it is only necessary to use one qubit to track algorithms, and the display code is written such that using the highest index qubit as the tracker is easiest.
 class Qubit:
 
     def __init__(self):
+
+        # gates = type of gate; gatePos = position of the gate along the circuit wire; gateAngles = theta, phi, lambd angles for phase and rotation gates
         self.gates = []
         self.gatePos = []
         self.gateAngles = []
 
+        # connections = type of connection; connectTo = qubit index that the current qubit will connect to (such as as a control); connectPos = position of the connection along the circuit wire
         self.connections = []
         self.connectTo = []
         self.connectPos = []
 
+        # algorithms = type of algorithm; algQubits = qubit indices involved in the algorithm; algNumQubits = number of qubits involved in the algorithm; algStart = circuit position where the algorithm begins; algEnd = circuit position where the algorithm ends
         self.algorithms = []
+        self.algQubits = []
         self.algNumQubits = []
         self.algStart = []
         self.algEnd = []
 
+        # The next available position along the qubit's circuit wire where a new gate can go. This is updated as more gates and algorithms are applied to the whole circuit and is used to determine gatePos, connectPos, and algStart above.
         self.earliestPos = 1
 
 # Creates a classical bit object, which stores the bit's state (0 or 1) and all connections the bit is a part of (e.g. as storage for the result of measurement on a qubit).
 class Cbit:
 
     def __init__(self, state):
+
+        # state = state of the bit, i.e. 0 or 1; connections = type of connection; connectTo = qubit index that the current bit will connect to (such as as a measurement output storage); connectPos = position of the connection along the circuit wire
         self.state = state
         self.connections = []
         self.connectTo = []
         self.connectPos = []
+
+        # The next available position along the bit's circuit wire where a new gate can go. This is updated as more gates and algorithms are applied to the whole circuit and is used to determine connectPos above.
         self.earliestPos = 1
 
 # Creates an instance of a quantum circuit with a provided number of quantum bits and classical bits and allows the user
@@ -109,9 +119,11 @@ class Circuit:
     # Pauli-X gate
     def X(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('X')
             angles = [None, None, None]
@@ -124,9 +136,11 @@ class Circuit:
     # Pauli-Y gate
     def Y(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('Y')
             angles = [None, None, None]
@@ -139,9 +153,11 @@ class Circuit:
     # Pauli-Z gate
     def Z(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('Z')
             angles = [None, None, None]
@@ -154,9 +170,11 @@ class Circuit:
     # Hadamard gate
     def H(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('H')
             angles = [None, None, None]
@@ -169,9 +187,11 @@ class Circuit:
     # Phase gate
     def S(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('S')
             angles = [None, None, None]
@@ -184,9 +204,11 @@ class Circuit:
     # pi/8 gate
     def T(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('T')
             angles = [None, None, None]
@@ -199,9 +221,11 @@ class Circuit:
     # phase gate
     def P(self, targets, theta):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. Append theta and None's for phi and lambd. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('P')
             angles = [theta, None, None]
@@ -214,9 +238,11 @@ class Circuit:
     # R_X gate
     def RX(self, targets, theta):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. Append theta and None's for phi and lambd. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('RX')
             angles = [theta, None, None]
@@ -229,9 +255,11 @@ class Circuit:
     # R_Y gate
     def RY(self, targets, theta):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. Append theta and None's for phi and lambd. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('RY')
             angles = [theta, None, None]
@@ -242,9 +270,11 @@ class Circuit:
     # R_Z gate
     def RZ(self, targets, theta):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. Append theta and None's for phi and lambd. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('RZ')
             angles = [theta, None, None]
@@ -255,9 +285,11 @@ class Circuit:
     # U gate
     def U(self, targets, theta, phi, lambd):
 
-        # Append the gate onto the running list of gates for the target qubits. If only one target is passed as an int, place it in a list to avoid an error when iterating over the for loop. gateAngles stores lists of 3 angles, so place theta and 2 Nones in a list before appending it. Use the qubit's earliest position for the gate position, then increment the earliest position for potential future gates.
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. Append theta, phi, and lambd. Use the qubit's earliest position for the gate position, then increment the earliest position for future gates.
         for target in targets:
             self.qubits[target].gates.append('U')
             angles = [theta, phi, lambd]
@@ -270,7 +302,7 @@ class Circuit:
     # Controlled-X gate
     def CX(self, controls, target):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # Append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Append a control, 'C', to the list of connections and the index of the target to the list of connectTo for the control qubits.
         self.qubits[target].gates.append('X')
         angles = [None, None, None]
         self.qubits[target].gateAngles.append(angles)
@@ -278,7 +310,7 @@ class Circuit:
             self.qubits[control].connections.append('C')
             self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
@@ -292,7 +324,7 @@ class Circuit:
     # Controlled-Y gate
     def CY(self, controls, target):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # Append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Append a control, 'C', to the list of connections and the index of the target to the list of connectTo for the control qubits.
         self.qubits[target].gates.append('Y')
         angles = [None, None, None]
         self.qubits[target].gateAngles.append(angles)
@@ -300,7 +332,7 @@ class Circuit:
             self.qubits[control].connections.append('C')
             self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
@@ -314,7 +346,7 @@ class Circuit:
     # Controlled-Z gate
     def CZ(self, controls, target):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # Append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Append a control, 'C', to the list of connections and the index of the target to the list of connectTo for the control qubits.
         self.qubits[target].gates.append('Z')
         angles = [None, None, None]
         self.qubits[target].gateAngles.append(angles)
@@ -322,7 +354,7 @@ class Circuit:
             self.qubits[control].connections.append('C')
             self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
@@ -336,7 +368,7 @@ class Circuit:
     # Controlled-P gate
     def CP(self, controls, target, theta):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # Append the gate onto the running list of gates for the target qubit. Append theta and None's for phi and lambd. Append a control, 'C', to the list of connections and the index of the target to the list of connectTo for the control qubits.
         self.qubits[target].gates.append('P')
         angles = [theta, None, None]
         self.qubits[target].gateAngles.append(angles)
@@ -344,7 +376,7 @@ class Circuit:
             self.qubits[control].connections.append('C')
             self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
@@ -358,7 +390,7 @@ class Circuit:
     # Controlled-RX gate
     def CRX(self, controls, target, theta):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # Append the gate onto the running list of gates for the target qubit. Append theta and None's for phi and lambd. Append a control, 'C', to the list of connections and the index of the target to the list of connectTo for the control qubits.
         self.qubits[target].gates.append('RX')
         angles = [theta, None, None]
         self.qubits[target].gateAngles.append(angles)
@@ -366,7 +398,7 @@ class Circuit:
             self.qubits[control].connections.append('C')
             self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
@@ -380,7 +412,7 @@ class Circuit:
         # Controlled-RY gate
     def CRY(self, controls, target, theta):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # Append the gate onto the running list of gates for the target qubit. Append theta and None's for phi and lambd. Append a control, 'C', to the list of connections and the index of the target to the list of connectTo for the control qubits.
         self.qubits[target].gates.append('RY')
         angles = [theta, None, None]
         self.qubits[target].gateAngles.append(angles)
@@ -388,7 +420,7 @@ class Circuit:
             self.qubits[control].connections.append('C')
             self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
@@ -402,7 +434,7 @@ class Circuit:
     # Controlled-RZ gate
     def CRZ(self, controls, target, theta):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # Append the gate onto the running list of gates for the target qubit. Append theta and None's for phi and lambd. Append a control, 'C', to the list of connections and the index of the target to the list of connectTo for the control qubits.
         self.qubits[target].gates.append('RZ')
         angles = [theta, None, None]
         self.qubits[target].gateAngles.append(angles)
@@ -410,7 +442,7 @@ class Circuit:
             self.qubits[control].connections.append('C')
             self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
@@ -424,7 +456,7 @@ class Circuit:
         # Controlled-U gate
     def CU(self, controls, target, theta, phi, lambd):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # Append the gate onto the running list of gates for the target qubit. Append theta, phi, and lambd. Append a control, 'C', to the list of connections and the index of the target to the list of connectTo for the control qubits.
         self.qubits[target].gates.append('U')
         angles = [theta, phi, lambd]
         self.qubits[target].gateAngles.append(angles)
@@ -432,7 +464,7 @@ class Circuit:
             self.qubits[control].connections.append('C')
             self.qubits[control].connectTo.append(target)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the target and control (inclusive). The max of this list will be used for the gate position for both the target and control. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(min(controls), target), max(max(controls), target)+1)]
         position = max(earliestPositions)
         self.qubits[target].gatePos.append(position)
@@ -446,14 +478,14 @@ class Circuit:
     # SWAP gate
     def SWAP(self, target1, target2):
 
-        # Append the gate onto the running list of gates for the target qubit (which we'll use target2 as for consistency with controlled gates). Append the connection type onto the running list of connections for the control qubit (target1) and which qubit it is controlling (target2).
+        # Append the gate onto the running list of gates for the target qubit (which we'll use target2 as for consistency with controlled gates). No angles are needed, so a list of None's are appended as a placeholder. Append the connection type onto the running list of connections for the control qubit (target1) and which qubit it is controlling (target2).
         self.qubits[target2].gates.append('SWAP')
         angles = [None, None, None]
         self.qubits[target2].gateAngles.append(angles)
         self.qubits[target1].connections.append('SWAP')
         self.qubits[target1].connectTo.append(target2)
 
-        # Get the earliest possible gate position within the circuit for each qubit between the targets (inclusive). The max of this list will be used for the gate position for both targets. Then increase the earliest position for all qubits.
+        # Get the earliest possible gate position within the circuit for each qubit between the targets (inclusive). The max of this list will be used for the gate position for both targets. Then increment the earliest position for all qubits.
         earliestPositions = [self.qubits[idx].earliestPos for idx in range(min(target1, target2), max(target1, target2)+1)]
         position = max(earliestPositions)
         self.qubits[target2].gatePos.append(position)
@@ -468,7 +500,7 @@ class Circuit:
     # Add a barrier to the circuit. The state vector does not change. A barrier is purely for visual purposes when displaying the circuit to divide the circuit into segments.
     def barrier(self):
 
-        # Append a barrier to the first qubit. Use the last qubit as the connector to extend the barrier across the entire circuit. The max earliest position for all qubits is the position of the barrier. All qubits' earliest position is then updated to the position after the barrier.
+        # Append a barrier to the highest index qubit. Similar to tracking algorithms, only one qubit needs to act as the tracker, and the cirucit display code is written such that using the last qubit is easiest. The max earliest position for all qubits is the position of the barrier. All qubits' earliest position is then updated to the position after the barrier.
         self.qubits[-1].gates.append('B')
         angles = [None, None, None]
         self.qubits[-1].gateAngles.append(angles)
@@ -480,9 +512,11 @@ class Circuit:
     # Measure a qubit and store the result in a classical bit. This is a measurement in the computational basis (projection into the 0 or 1 state).
     def measure(self, targets):
 
-        # Append the gate onto the running list of gates for the target qubit. Append the connection type onto the running list of connections for the control qubit and which qubit it is controlling (the target).
+        # If only one target is provided, place the index in a list. This is to remain consistent with situations where lists of targets are provided and avoids an error in the code below.
         if type(targets) == int:
             targets = [targets]
+
+        # For each target, append the gate onto the running list of gates for the target qubit. No angles are needed, so a list of None's are appended as a placeholder. Append an output, 'O', to the list of connections and the index of the target to the list of connectTo for the classical bit that will store the measurement outcome. For simplicity, the classical bit with the same index as the target qubit will be used.
         for target in targets:
             self.qubits[target].gates.append('M')
             angles = [None, None, None]
@@ -524,27 +558,32 @@ class Circuit:
     
     # Inverse Quantum Fourier Transform (IQFT): this algorithm converts qubits in the Fourier basis into the computational basis. This is commonly used as a sub-step within other algorithms.
     #
-    # You may provide the number of qubits to perform the IQFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
-    def IQFT(self, numQubits=0):
+    # You may provide the qubit indices to perform the IQFT on using algQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform IQFT on all qubits within the circuit, you may leave this argument as the default, and the function will create a list of all qubit indices in the circuit.
+    def IQFT(self, algQubits=None):
 
-        if numQubits == 0:
-            numQubits = self.numQubits
+        # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+        if algQubits == None:
+            algQubits = list(range(self.numQubits))
+        numQubits = len(algQubits)
 
-        # Append a barrier to the first qubit. Use the last qubit as the connector to extend the barrier across the entire circuit. The max earliest position for all qubits is the position of the barrier. All qubits' earliest position is then updated to the position after the barrier.
-        self.qubits[-1].algorithms.append('IQFT')
-        self.qubits[-1].algNumQubits.append(numQubits)
+        # Use the highest index qubit as the algorithm tracker. Append the algorithm type, qubit indices involved, and number of qubits involved to the lists for the tracker.
+        algTracker = max(algQubits)
+        self.qubits[algTracker].algorithms.append('IQFT')
+        self.qubits[algTracker].algQubits.append(algQubits)
+        self.qubits[algTracker].algNumQubits.append(numQubits)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the starting point for the algorithm. Append this value to algStart for the tracker. Increase the earliest position for all qubits in the circuit to the algStart + 1.
         earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
-        self.qubits[-1].algStart.append(earliestPosition)
+        self.qubits[algTracker].algStart.append(earliestPosition)
         for qubit in self.qubits:
             qubit.earliestPos = earliestPosition + 1
 
-        Algorithms.IQFT(self, numQubits)
+        # Apply the algorithm. See Algorithms.py.
+        Algorithms.IQFT(self, algQubits)
 
-        # Append a barrier to the first qubit. Use the last qubit as the connector to extend the barrier across the entire circuit. The max earliest position for all qubits is the position of the barrier. All qubits' earliest position is then updated to the position after the barrier.
-        self.qubits[-1].algorithms.append('IQFT')
-        self.qubits[-1].algNumQubits.append(numQubits)
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the end point for the algorithm. Append this value to algEnd for the tracker. Increase the earliest position for all qubits in the circuit to the algEnd + 1.
         earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
-        self.qubits[-1].algEnd.append(earliestPosition)
+        self.qubits[algTracker].algEnd.append(earliestPosition)
         for qubit in self.qubits:
             qubit.earliestPos = earliestPosition + 1
 
@@ -563,20 +602,30 @@ class Circuit:
         Algorithms.Grover(self, numQubits, oracle)
         return
 
+    # Calculate the dimensions in data coordinates of the boxes used to represent gates when displaying the circuit. xy = center of the box, in data coordinates; sizeX (sizeY) = total pixel size of the box's text in the X (Y) axis, accounting for number of letters in the text (X) and number of lines of text (Y); ax = figure axis.
     def gate_size(self, xy, sizeX, sizeY, ax):
+
+        # Separate the center x and y coordinates. Convert them to display coordinates.
         xData, yData = xy
         xDisplay, yDisplay = ax.transData.transform([xData,yData])
+
+        # The width (height) in display coordinates will be 2 times the text width (height).
         wDisplay = sizeX*2
         hDisplay = sizeY*2
+
+        # Calculate the minimum x and y coordinates of the box in display coordinates (lower left corner). This is the center is half of the width (height) for the x (y) coordinate. Then convert these to data coordinates.
         xMinDisplay, yMinDisplay = xDisplay-wDisplay/2, yDisplay-hDisplay/2
         xMinData, yMinData = ax.transData.inverted().transform((xMinDisplay,yMinDisplay))
+
+        # Calculate the maximum x and y coordinates by adding the width (height) to the minimum x (y) coordinate in display coordinates and converting to data coordinates. Then subtract the max and min for x (y) to get the width (height) in data coordinates.
         xMaxData, yMaxData = ax.transData.inverted().transform((xMinDisplay+wDisplay,yMinDisplay+hDisplay))
         wData = xMaxData - xMinData
         hData = yMaxData - yMinData
 
+        # Return the lower left box coordinates, width, and height, all in data coordinates.
         return [(xMinData, yMinData), wData, hData]
 
-    # Assign the gate label, box, and connection property to be used for displaying the circuit
+    # Assign the gate label, box, and connection property to be used for displaying the circuit. gate = gate type; xy = center of the box, in data coordinates; ax = figure axis; zorder = layer order for rendering the boxes in the circuit diagram; angles = theta, phi, lambd, when needed for phase and rotation gates.
     def format_gate(self, gate, xy, ax, zorder, angles=[0, 0, 0]):
 
         # User-defined phase gate
@@ -677,8 +726,8 @@ class Circuit:
     def format_algorithm(self, algorithm, numQubits, xy, ax, zorder):
 
         algLabel = algorithm
-        size = 10
-        sizeX = size*len(algorithm)
+        size = 15
+        sizeX = size*len(algorithm)*0.5
         sizeY = size
         algXY, algWidth, algHeight = self.gate_size(xy, sizeX, sizeY, ax)
         algBox = Rectangle(algXY, algWidth, algHeight+numQubits-1, fc='white', ec='black', zorder=zorder)
@@ -707,11 +756,17 @@ class Circuit:
                 lastPos = qubit.gatePos[-1]
                 if lastPos > circuitLength:
                     circuitLength = lastPos
+        
+        circuitOffset = 0
+        for qubit in self.qubits:
+            for Aidx, algorithm in enumerate(qubit.algorithms):
+                circuitOffset += qubit.algEnd[Aidx]-qubit.algStart[Aidx]
 
         # Set some style parameters
         bitLabelPosition = 0
         bitLabelFontSize = 15
-        ax.set(xlim=(0, circuitLength+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
+        ax.set(xlim=(0, circuitLength-circuitOffset+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
+        ax.set_axis_off()
 
         # Begin the circuit element rendering order at 3. This will be increased when necessary to ensure proper display ordering of the circuit elements.
         zorder = 3
@@ -720,11 +775,11 @@ class Circuit:
         position = 1
         posOffset = 0
         algorithmOn = False
-        algInitiator = None
+        algTracker = None
         while position <= maxGatePos:
 
             if algorithmOn:
-                if position in self.qubits[algInitiator].algEnd:
+                if position in self.qubits[algTracker].algEnd:
                     algorithmOn = False
                 posOffset += 1
             else:
@@ -734,13 +789,14 @@ class Circuit:
 
                     if position in qubit.algStart:
                         algorithmOn = True
-                        algInitiator = Qidx
+                        algTracker = Qidx
                         Aidx = qubit.algStart.index(position)
                         alg = qubit.algorithms[Aidx]
                         algNumQubits = qubit.algNumQubits[Aidx]
                         [gateLabel, size, arrowprops, gateBox] = self.format_algorithm(alg, algNumQubits, xy, ax, zorder)
                         ax.add_patch(gateBox)
-                        ax.annotate(gateLabel, xy=xy, size=size, va='center', ha='center', zorder=zorder)
+                        y = -1*np.mean([list(qubit.algQubits[Aidx])[0], list(qubit.algQubits[Aidx])[-1]])
+                        ax.annotate(gateLabel, xy=(xy[0],y), size=size, va='center', ha='center', zorder=zorder)
                         break
 
                     if position in qubit.connectPos:
@@ -793,10 +849,6 @@ class Circuit:
             # Display the qubit labels and a horizontal line to represent the wire for each qubit's circuit.
             ax.plot([bitLabelPosition, circuitLength-posOffset], [-1*Qidx, -1*Qidx], color='black', zorder=1)
             ax.annotate('$Q_%s$'%Qidx, xy=(bitLabelPosition, -1*Qidx), size=bitLabelFontSize, va='center', ha='center', bbox=dict(boxstyle='square', facecolor='white', edgecolor='none'), zorder=2)
-
-        # Reset diagram xlim with the actual circuit length, removing space when ignoring gates within algorithms
-        ax.set(xlim=(0, circuitLength-posOffset+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
-        ax.set_axis_off()
 
         plt.show()
 
