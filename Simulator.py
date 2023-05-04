@@ -625,46 +625,72 @@ class Circuit:
         # Return the lower left box coordinates, width, and height, all in data coordinates.
         return [(xMinData, yMinData), wData, hData]
 
-    # Assign the gate label, box, and connection property to be used for displaying the circuit. gate = gate type; xy = center of the box, in data coordinates; ax = figure axis; zorder = layer order for rendering the boxes in the circuit diagram; angles = theta, phi, lambd, when needed for phase and rotation gates.
+    # Assign the gate label, box parameters, and connection parameters to be used for displaying the circuit. gate = gate type; xy = center of the box, in data coordinates; ax = figure axis; zorder = layer order for rendering the boxes in the circuit diagram; angles = theta, phi, lambd, when needed for phase and rotation gates.
     def format_gate(self, gate, xy, ax, zorder, angles=[0, 0, 0]):
 
         # User-defined phase gate
         if gate == 'P':
+
+            # Gate label: 'P' with the theta value below it, with specified text size.
             [theta, phi, lambd] = angles
             thetaStr = str(round(theta, 2))
             gateLabel = 'P\n(%s)'%thetaStr
-            size = 10
+            textSize = 10
+
+            # Get the character length of the gate label, using theta since it will be >= character length of 'P.' Ignore the parentheses since they do not add much width. If theta is a single digit whole number, add 1 to textLen. If theta is a decimal, subtract 1. These changes were made heuristically so that an appropriate padding is added around the text when rendering the box for the gate.
             textLen = len(thetaStr)
             if textLen == 1: textLen += 1
             else: textLen -= 1
-            sizeX = size*textLen*0.8
-            sizeY = size*2
-            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+
+            # Set the width and height of the gate label text in display coordinates, i.e. textSize times the number of characters in the X and Y directions, respectively. For the text width, the factor of 0.8 was determined heuristically for appropriate padding when rendering the box.
+            textWidth = textSize*textLen*0.8
+            textHeight = textSize*2
+
+            # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, textWidth, textHeight, ax)
+
+            # Create the box object with appropriate style parameters. Since this is not a connection, leave the arrow properties blank.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
-            arrowprops=dict()
+            arrowProps=dict()
+
         # Rotation gates
         elif gate in {'RX', 'RY', 'RZ'}:
+
+            # Gate label: 'R' with the axis of rotation as a subscript and the theta value below it, with specified text size. Split the rotation label into its two letters, 'R' and the axis of rotation, to make the axis a subscript.
             [theta, phi, lambd] = angles
-            letters = list(gate)
             thetaStr = str(round(theta, 2))
+            letters = list(gate)
             gateLabel = '$%s_%s$\n(%s)'%(letters[0], letters[1], thetaStr)
-            size = 10
+            textSize = 10
+
+            # Get the character length of the gate label, using theta since it will usually be >= character length of gate type. Ignore the parentheses since they do not add much width. If theta is a single digit whole number, add 1 to textLen. If theta is a decimal, subtract 1. These changes were made heuristically so that an appropriate padding is added around the text when rendering the box for the gate.
             textLen = len(thetaStr)
             if textLen == 1: textLen += 1
             else: textLen -= 1
-            sizeX = size*textLen*0.8
-            sizeY = size*2
-            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+
+            # Set the width and height of the gate label text in display coordinates, i.e. textSize times the number of characters in the X and Y directions, respectively. For the text width, the factor of 0.8 was determined heuristically for appropriate padding when rendering the box.
+            textWidth = textSize*textLen*0.8
+            textHeight = textSize*2
+
+            # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, textWidth, textHeight, ax)
+
+            # Create the box object with appropriate style parameters. Since this is not a connection, leave the arrow properties blank.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
-            arrowprops=dict()
+            arrowProps=dict()
+
         # U gates
         elif gate == 'U':
+
+            # Gate label: 'U' with the angle values below it, with specified text size.
             [theta, phi, lambd] = angles
             thetaStr = str(round(theta, 2))
             phiStr = str(round(phi, 2))
             lambdStr = str(round(lambd, 2))
             gateLabel = 'U\n(%s,%s,%s)'%(thetaStr, phiStr, lambdStr)
-            size = 10
+            textSize = 10
+
+            # Get the character length of the gate label, using the sum of the angles' text lengths since they will be > character length of 'U.' Ignore the parentheses since they do not add much width. Remove the decimal points. Add 2 to the text length sum. These changes were made heuristically so that an appropriate padding is added around the text when rendering the box for the gate.
             if '.' in thetaStr:
                 thetaStr = thetaStr.replace('.','')
             if '.' in phiStr:
@@ -672,70 +698,119 @@ class Circuit:
             if '.' in lambdStr:
                 lambdStr = lambdStr.replace('.','')
             textLen = len(thetaStr+phiStr+lambdStr)+2
-            sizeX = size*textLen*0.55
-            sizeY = size*2
-            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+
+            # Set the width and height of the gate label text in display coordinates, i.e. textSize times the number of characters in the X and Y directions, respectively. For the text width, the factor of 0.55 was determined heuristically for appropriate padding when rendering the box.
+            textWidth = textSize*textLen*0.55
+            textHeight = textSize*2
+
+            # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, textWidth, textHeight, ax)
+
+            # Create the box object with appropriate style parameters. Since this is not a connection, leave the arrow properties blank.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
-            arrowprops=dict()
+            arrowProps=dict()
+
         # SWAP gates
         elif gate == 'SWAP':
+
+            # Gate label: 'x' with the specified text size. This size can be used for the text width and height since it is a single character and a single line.
             gateLabel = 'x'
-            size = 25
-            sizeX = size
-            sizeY = size
-            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            textSize = 25
+            textWidth = textSize
+            textHeight = textSize
+
+            # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, textWidth, textHeight, ax)
+
+            # Create the box object with appropriate style parameters. Use a solid black line for the connection to the swapped qubit.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='none', ec='none', zorder=zorder)
-            arrowprops=dict(arrowstyle="-", edgecolor='black', linewidth=2)
+            arrowProps=dict(arrowstyle="-", edgecolor='black', linewidth=2)
+
         # Controls in controlled-gates
         elif gate == 'C':
+
+            # Gate label: blank. A filled circle with the specified size will be used as the operation symbol. The symbol width and height are the same since the symbol is a circle.
             gateLabel = ' '
             size = 8
-            sizeX = size
-            sizeY = size
-            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            symWidth = size
+            symHeight = size
+
+            # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, symWidth, symHeight, ax)
+
+            # Create the circle object with appropriate style parameters. Use a solid black line for the connection to the target qubit.
             gateBox = Ellipse(xy, gateWidth, gateHeight, fc='black', ec='black', zorder=zorder)
             arrowprops=dict(arrowstyle="-", edgecolor='black', linewidth=2)
+
         # Output in measurement gates
         elif gate == 'O':
+
+            # Gate label: blank. An empty circle with the specified size will be used as the operation symbol. The symbol width and height are the same since the symbol is a circle.
             gateLabel = ' '
             size = 12
-            sizeX = size
-            sizeY = size
-            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            symWidth = size
+            symHeight = size
+
+            # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, symWidth, symHeight, ax)
+
+            # Create the circle object with appropriate style parameters. Use a solid black line with an arrow that points to the circle to represent the measurement output from the qubit being stored in the classical bit.
             gateBox = Ellipse(xy, gateWidth, gateHeight, fc='none', ec='black', lw=2, zorder=zorder)
             arrowprops=dict(arrowstyle="<|-", edgecolor='black', linewidth=2)
+
+        # Barriers
         elif gate == 'B':
+
+            # Gate label: blank. A grey box spanning all the qubits will be used for the barrier symbol. The barrier width and height are the same, chosen heuristically.
             gateLabel = ' '
             size = 10
-            sizeX = size
-            sizeY = size
-            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            barrierWidth = size
+            barrierHeight = size
+
+            # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, barrierWidth, barrierHeight, ax)
+
+            # Create the box object with appropriate style parameters. Since gateHeight would assume only one qubit has the barrier, add the total number of qubits in the circuit (-1 since gateHeight already includes one qubit) to stretch the barrier over the entire circuit. Since this is not a connection, leave the arrow properties blank.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight+self.numQubits-1, fc='gray', ec='none', zorder=zorder)
             arrowprops=dict()
+
+        # Gates with no rotation angles.
         else:
+
+            # Gate label: the gate type, with specified text size. Since single letters are used for these gate types, text width and height equal the text size.
             gateLabel = gate
-            size = 15
-            sizeX = size
-            sizeY = size
-            gateXY, gateWidth, gateHeight = self.gate_size(xy, sizeX, sizeY, ax)
+            textSize = 15
+            textWidth = textSize
+            textHeight = textSize
+
+            # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
+            gateXY, gateWidth, gateHeight = self.gate_size(xy, textWidth, textHeight, ax)
+
+            # Create the box object with appropriate style parameters. Since this is not a connection, leave the arrow properties blank.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
             arrowprops=dict()
         
-        return [gateLabel, size, arrowprops, gateBox]
+        return [gateLabel, textSize, arrowprops, gateBox]
     
+    # Assign the algorithm label and box parameters to be used for displaying the circuit. algorithm = algorithm type; numQubits = number of qubits involved in the algorithm; xy = center of the box, in data coordinates; ax = figure axis; zorder = layer order for rendering the boxes in the circuit diagram.
     def format_algorithm(self, algorithm, numQubits, xy, ax, zorder):
 
+        # Algorithm label: algorithm type. The box width is the text size times the character length of the algorithm type, with a factor of 0.5 determined heuristically for appropriate padding. The box height is just the text size since only a single line is used.
         algLabel = algorithm
-        size = 15
-        sizeX = size*len(algorithm)*0.5
-        sizeY = size
+        textSize = 15
+        boxWidth = textSize*len(algorithm)*0.5
+        boxHeight = textSize
+
+        # Get the algorithm box coordinates, width, and height in data coordinates using the function gate_size.
         algXY, algWidth, algHeight = self.gate_size(xy, sizeX, sizeY, ax)
+
+        # Create the box object with appropriate style parameters. Since algHeight would assume only one qubit has the barrier, add the total number of qubits involved in the algorithm (-1 since algHeight already includes one qubit) to stretch the box over all qubits involved. Since this is not a connection, leave the arrow properties blank.
         algBox = Rectangle(algXY, algWidth, algHeight+numQubits-1, fc='white', ec='black', zorder=zorder)
         arrowprops=dict()
 
-        return [algLabel, size, arrowprops, algBox]
+        return [algLabel, textSize, arrowprops, algBox]
 
-    # Create a figure of the circuit.
+    # Create a figure showing a diagram of the circuit.
     def display_circuit(self):
 
         # Get the screen size and dpi to scale the figure window.
@@ -743,13 +818,13 @@ class Circuit:
         screenWidth = win.winfo_screenwidth()
         screenHeight = win.winfo_screenheight()
         dpi = win.winfo_fpixels('1i')
-        win.withdraw()
+        win.withdraw() # don't show the tkinter window
 
-        # Create the figure.
-        fig = plt.figure(figsize=(screenWidth/dpi, screenHeight/dpi))
+        # Create the figure with size 0.75 times the screen width and height.
+        fig = plt.figure(figsize=(screenWidth/dpi*0.75, screenHeight/dpi*0.75))
         ax = fig.add_subplot(111)
 
-        # Get the circuit length
+        # Get the circuit length. For each qubit, get the last gate position applied to the qubit. Update circuitLength to be the highest gate position in the circuit.
         circuitLength = 0
         for qubit in self.qubits:
             if len(qubit.gates) > 0:
@@ -757,83 +832,137 @@ class Circuit:
                 if lastPos > circuitLength:
                     circuitLength = lastPos
         
-        circuitOffset = 0
+        # Algorithms will be displayed as simple boxes without showing the individual gates comprising the algorithm (for simplicity; use Algorithms.py directly to display the individial gates). Calculate a circuit length offset to account for gates applied after algorithms being shifted to earlier positions in the diagram. For each qubit, get the number of positions taken up by each algorithm that the qubit is a tracker for. Add the number to the running total.
+        circuitLengthOffset = 0
         for qubit in self.qubits:
             for Aidx, algorithm in enumerate(qubit.algorithms):
-                circuitOffset += qubit.algEnd[Aidx]-qubit.algStart[Aidx]
+                circuitLengthOffset += qubit.algEnd[Aidx]-qubit.algStart[Aidx]
 
-        # Set some style parameters
+        # Set some style parameters. Start the bit labels at x=0. The diagram will display the x axis from 0 to the circuit length, with the offset subtracted out. Along the y axis, qubits will be placed at the negative of their index so that the lowest index qubit will be at the top of the diagram. Classical bits will be below the qubits. Set the y axis to be from the negative of the total number of qubits and classical bits to 1, which prevents a buffer with the top qubit.
         bitLabelPosition = 0
         bitLabelFontSize = 15
-        ax.set(xlim=(0, circuitLength-circuitOffset+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
+        ax.set(xlim=(0, circuitLength-circuitLengthOffset+1), ylim=(-1*(self.numQubits+self.numCbits), 1))
         ax.set_axis_off()
 
         # Begin the circuit element rendering order at 3. This will be increased when necessary to ensure proper display ordering of the circuit elements.
         zorder = 3
 
-        maxGatePos = max([max(qubit.gatePos) for qubit in self.qubits])
-        position = 1
-        posOffset = 0
+        ## Display all the gate operations in the circuit.
+
+        # algorithmOn is a boolean that tracks whether the current circuit position is part of an algorithm. algTracker is the qubit that is the tracker for the current algorithm when algorithmOn is True. posOffset keeps track of how many positions algorithms take up so that gates after algorithms can be shifted to earlier positions in the diagram.
         algorithmOn = False
         algTracker = None
+        posOffset = 0
+
+        # Loop over the circuit position until maxGatePos (highest position of a gate among all qubits) is exceeded.
+        position = 1
+        maxGatePos = max([qubit.gatePos[-1] for qubit in self.qubits])
         while position <= maxGatePos:
 
+            # If algorithmOn is True, the current position is part of an algorithm.
             if algorithmOn:
+                # If the current position is the algorithm end, set algorithmOn to False.
                 if position in self.qubits[algTracker].algEnd:
                     algorithmOn = False
+                # Increment the posOffset since the current position will not be displayed in the diagram.
                 posOffset += 1
+            
+            # If algorithmOn is False, loop over all the qubits and display their gate, connection, or algorithm being tracked at the current circuit position.
             else:
                 for Qidx, qubit in reversed(list(enumerate(self.qubits))):
 
+                    # Coordinates to place the qubit's gate at; x = current position minus the current posOffset; y = negative of the current qubit index.
                     xy = (position-posOffset, -1*Qidx)
 
+                    # If the current position is an algorithm, display the algorithm box over all qubits involved.
                     if position in qubit.algStart:
+
+                        # Set algorithmOn to True and the algTracker to the current qubit. Get the index of this algorithm among all the current qubit's algorithms tracked (Aidx). Get the algorithm type (alg) and number of qubits involved (algNumQubits).
                         algorithmOn = True
                         algTracker = Qidx
                         Aidx = qubit.algStart.index(position)
                         alg = qubit.algorithms[Aidx]
                         algNumQubits = qubit.algNumQubits[Aidx]
-                        [gateLabel, size, arrowprops, gateBox] = self.format_algorithm(alg, algNumQubits, xy, ax, zorder)
+
+                        # Format the algorithm box using format_algorithm. Add gateBox as a patch.
+                        [gateLabel, textSize, arrowProps, gateBox] = self.format_algorithm(alg, algNumQubits, xy, ax, zorder)
                         ax.add_patch(gateBox)
+
+                        # Add the gate label as an annotation over the box. To center the label vertically, find the mean of the first and last qubit involved in the algorithm and negate the result.
                         y = -1*np.mean([list(qubit.algQubits[Aidx])[0], list(qubit.algQubits[Aidx])[-1]])
-                        ax.annotate(gateLabel, xy=(xy[0],y), size=size, va='center', ha='center', zorder=zorder)
+                        ax.annotate(gateLabel, xy=(xy[0],y), size=textSize, va='center', ha='center', zorder=zorder)
+
+                        # No algorithm gates should be displayed. Break out of the qubit for loop since algorithmOn is now True. The for loop will not be reentered until the entire algorithm gate sequence has been skipped over (in the display only).
                         break
 
+                    # If the current position is in the qubit's connectPos, display the connection.
                     if position in qubit.connectPos:
+
+                        # Reduce the zorder to render the connection below the target gate.
                         zorder -= 1
+
+                        # Get the index of this connection among all the current qubit's connections (Cidx). Get the connection type (connection) and the target qubit to connect to (connectTo).
                         Cidx = qubit.connectPos.index(position)
                         connection = qubit.connections[Cidx]
-                        [connectLabel, size, arrowprops, gateBox] = self.format_gate(connection, xy, ax, zorder)
-                        ax.add_patch(gateBox)
-                        ax.annotate(connectLabel, xy=(position, -1*qubit.connectTo[Cidx]), xytext=xy, size=size, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
+                        connectTo = qubit.connectTo[Cidx]
+
+                        # Format the connection symbol using format_gate. Add connectSym as a patch.
+                        [connectLabel, textSize, arrowProps, connectSym] = self.format_gate(connection, xy, ax, zorder)
+                        ax.add_patch(connectSym)
+
+                        # Add the connection label and connector as an annotation. xy = position of the target; xytext = position of the connection symbol.
+                        ax.annotate(connectLabel, xy=(position, -1*connectTo), xytext=xy, size=textSize, va='center', ha='center', arrowprops=arrowProps, zorder=zorder)
+
+                        # Increase the zorder back to the gate layer.
                         zorder += 1
                     
+                    # If the current position is within the qubit's gatePos, display the gate.
                     if position in qubit.gatePos:
+
+                        # Get the index of this gate among all the current qubit's gates (Gidx). Get the gate type (gate) and angles for phase or rotation gates (angles).
                         Gidx = qubit.gatePos.index(position)
                         gate = qubit.gates[Gidx]
                         angles = qubit.gateAngles[Gidx]
+
+                        # Format the gate box using format_gate. Add gateBox as a patch. If the gate is a phase or rotation gate, provide the angles to the function as well.
                         if gate in {'P', 'RX', 'RY', 'RZ', 'U'}:
                             angles = qubit.gateAngles[Gidx]
-                            [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder, angles)
+                            [gateLabel, textSize, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder, angles)
                         else:
-                            [gateLabel, size, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder)
+                            [gateLabel, textSize, arrowprops, gateBox] = self.format_gate(gate, xy, ax, zorder)
                         ax.add_patch(gateBox)
-                        ax.annotate(gateLabel, xy=xy, size=size, va='center', ha='center', zorder=zorder)
+
+                        # Add the gate label as an annotation.
+                        ax.annotate(gateLabel, xy=xy, size=textSize, va='center', ha='center', zorder=zorder)
 
                 # Display each classical bit connection using the properties from format_gate
                 for Bidx, cbit in reversed(list(enumerate(self.cbits))):
 
+                    # Coordinates to place the bit's operation at; x = current position minus the current posOffset; y = negative of the current bit index + total number of qubits in the circuit.
                     xy = (position-posOffset, -1*(Bidx+self.numQubits))
 
+                    # If the current position is in the bit's connectPos, display the connection.
                     if position in cbit.connectPos:
+
+                        # Reduce the zorder to render the connection below the target gate.
                         zorder -= 1
+
+                        # Get the index of this connection among all the current bit's connections (Cidx). Get the connection type (connection) and the target qubit to connect to (connectTo).
                         Cidx = cbit.connectPos.index(position)
                         connection = cbit.connections[Cidx]
-                        [connectLabel, size, arrowprops, gateBox] = self.format_gate(connection, xy, ax, zorder)
-                        ax.add_patch(gateBox)
-                        ax.annotate(connectLabel, xy=(xy[0], -1*cbit.connectTo[Cidx]), xytext=xy, size=size, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
+                        connectTo = cbit.connectTo[Cidx]
+
+                        # Format the connection symbol using format_gate. Add connectSym as a patch.
+                        [connectLabel, textSize, arrowprops, connectSym] = self.format_gate(connection, xy, ax, zorder)
+                        ax.add_patch(connectSym)
+
+                        # Add the connection label and connector as an annotation. xy = position of the qubit being connected to; xytext = position of the connection symbol.
+                        ax.annotate(connectLabel, xy=(xy[0], -1*connectTo), xytext=xy, size=textSize, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
+
+                        # Increase the zorder back to the gate layer.
                         zorder += 1
 
+            # Increment the position for the next loop iteration.
             position += 1
 
         # Display each classical bit. These are displayed first for proper layer ordering when displaying connections between qubits and classical bits.
@@ -854,9 +983,10 @@ class Circuit:
 
         return
     
+    # Run the circuit to calculate the final state of the qubits.
     def run(self, shots, hist=False):
 
-        # Get the circuit length
+        # Get the circuit length. For each qubit, get the last gate position applied to the qubit. Update circuitLength to be the highest gate position in the circuit.
         circuitLength = 0
         for qubit in self.qubits:
             if len(qubit.gates) > 0:
