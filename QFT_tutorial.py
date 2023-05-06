@@ -2,7 +2,8 @@
 
 ################################################################################
 
-# Import the QPU simulator which creates the quantum circuit and contains all gate operations. Import QFT from Algorithms if you want to access the algorithm directly, rather than through QPUsimulator. Note this is only a syntax difference when calling the algorithm; the circuit operation will be exactly the same for either method.
+# Import the QPU simulator which creates the quantum circuit and contains all gate operations.
+# Import QFT from Algorithms if you want to access the algorithm directly, rather than through QPUsimulator. Computationally, using the algorithm through Simulator.py or Algorithms.py is the same. When displaying the circuit, Simulator.py simplifies the diagram to show a general "QFT" block over all the qubits involved to represent the algorithm; Algorithms.py shows all the individual gates completed in the algorithm.
 import Simulator as QPU
 from Algorithms import QFT
 
@@ -26,7 +27,8 @@ circuit.display_circuit()
 shots = 1024
 results = circuit.run(shots, hist=True)
 
-# You can apply the algorithm using any oracle by accessing Algorithms.py directly if it is imported. In this case, pass the circuit as the only argument to the QFT function. For circuit operations, this is identical to applying the algorithm using the gate syntax used above. Only the syntax for calling the algorithm changes. Use whichever syntax is more intuitive to you.
+# If you would like to see all the gates performed by the algorithm, apply the QFT directly through Algorithms.py. Note: the function QFT was imported from Algorithms.py above, so we can use this function directly now.
+# Computatinally, this method and the method above are exactly the same.
 numQubits = 3
 circuit = QPU.Circuit(numQubits)
 

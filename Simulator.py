@@ -552,8 +552,34 @@ class Circuit:
     # Quantum Fourier Transform (QFT): this algorithm converts qubits in the computational basis into the Fourier basis. This is commonly used as a sub-step within other algorithms.
     #
     # You may provide the number of qubits to perform the QFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform QFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
-    def QFT(self, numQubits=0):
-        Algorithms.QFT(self, numQubits)
+    def QFT(self, algQubits=None):
+
+        # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+        if algQubits == None:
+            algQubits = list(range(self.numQubits))
+        numQubits = len(algQubits)
+
+        # Use the highest index qubit as the algorithm tracker. Append the algorithm type, qubit indices involved, and number of qubits involved to the lists for the tracker.
+        algTracker = max(algQubits)
+        self.qubits[algTracker].algorithms.append('QFT')
+        self.qubits[algTracker].algQubits.append(algQubits)
+        self.qubits[algTracker].algNumQubits.append(numQubits)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the starting point for the algorithm. Append this value to algStart for the tracker. Increase the earliest position for all qubits in the circuit to the algStart + 1.
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[algTracker].algStart.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
+        # Apply the algorithm. See Algorithms.py.
+        Algorithms.QFT(self, algQubits)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the end point for the algorithm. Append this value to algEnd for the tracker. Increase the earliest position for all qubits in the circuit to the algEnd + 1.
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[algTracker].algEnd.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
         return
     
     # Inverse Quantum Fourier Transform (IQFT): this algorithm converts qubits in the Fourier basis into the computational basis. This is commonly used as a sub-step within other algorithms.
@@ -594,8 +620,34 @@ class Circuit:
     # The angle lambd = 2pi*theta must be passed as an argument.
     #
     # You may provide the number of qubits to perform the QPE on using numPrecisionQubits. To perform QPE on all qubits within the circuit (minus the final qubit which represents |psi>), you may leave this argument as the default, and the function will get the number of qubits in the circuit.
-    def QPE(self, lambd, numPrecisionQubits=0):
-        Algorithms.QPE(self, lambd, numPrecisionQubits)
+    def QPE(self, lambd, algQubits=None):
+
+        # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+        if algQubits == None:
+            algQubits = list(range(self.numQubits))
+        numQubits = len(algQubits)
+
+        # Use the highest index qubit as the algorithm tracker. Append the algorithm type, qubit indices involved, and number of qubits involved to the lists for the tracker.
+        algTracker = max(algQubits)
+        self.qubits[algTracker].algorithms.append('QPE')
+        self.qubits[algTracker].algQubits.append(algQubits)
+        self.qubits[algTracker].algNumQubits.append(numQubits)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the starting point for the algorithm. Append this value to algStart for the tracker. Increase the earliest position for all qubits in the circuit to the algStart + 1.
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[algTracker].algStart.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
+        # Apply the algorithm. See Algorithms.py.
+        Algorithms.QPE(self, lambd, algQubits)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the end point for the algorithm. Append this value to algEnd for the tracker. Increase the earliest position for all qubits in the circuit to the algEnd + 1.
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[algTracker].algEnd.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+        
         return
     
     def Grover(self, numQubits=0, oracle='example'):
@@ -834,9 +886,23 @@ class Circuit:
         
         # Algorithms will be displayed as simple boxes without showing the individual gates comprising the algorithm (for simplicity; use Algorithms.py directly to display the individial gates). Calculate a circuit length offset to account for gates applied after algorithms being shifted to earlier positions in the diagram. For each qubit, get the number of positions taken up by each algorithm that the qubit is a tracker for. Add the number to the running total.
         circuitLengthOffset = 0
-        for qubit in self.qubits:
+        prevAlgEnd = 0
+
+        # Loop over the qubits starting at the highest index so that when there is an algorithm within an algorithm, only the offset for the outside algorithm will be counted.
+        for qubit in reversed(self.qubits):
             for Aidx, algorithm in enumerate(qubit.algorithms):
-                circuitLengthOffset += qubit.algEnd[Aidx]-qubit.algStart[Aidx]
+
+                # If algStart of the current algorithm is less than the previous algorithm's algEnd, then this is an algorithm within another algorithm. Skip over it since we only want the offset from the outside algorithm.
+                if qubit.algStart[Aidx] < prevAlgEnd:
+                    continue
+                
+                else:
+
+                    # Subtract the algStart from the algEnd to get the offset for the current algorithm.
+                    circuitLengthOffset += qubit.algEnd[Aidx]-qubit.algStart[Aidx]
+
+                    # Store the end position of the current algorithm to check for algorithms within this algorithm on subsequent loops.
+                    prevAlgEnd = qubit.algEnd[Aidx]
 
         # Set some style parameters. Start the bit labels at x=0. The diagram will display the x axis from 0 to the circuit length, with the offset subtracted out. Along the y axis, qubits will be placed at the negative of their index so that the lowest index qubit will be at the top of the diagram. Classical bits will be below the qubits. Set the y axis to be from the negative of the total number of qubits and classical bits to 1, which prevents a buffer with the top qubit.
         bitLabelPosition = 0
@@ -1029,7 +1095,7 @@ class Circuit:
                     continue
 
                 # Skip over algorithm indicators since they are only used for displaying the circuit. The actual gates within the algorithm start at the next circuit position. Go to the next position.
-                if 'IQFT' in gates[-1]:
+                if set(['QFT','IQFT','QPE']) & set(gates[-1]):
                     continue
 
                 # If there is a controlled gate within the current position:

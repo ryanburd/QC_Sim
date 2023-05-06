@@ -70,33 +70,33 @@ def DeutschJozsa(circuit, oracle, constantOracleOutput=0, balancedInputFlips=[])
 # Quantum Fourier Transform (QFT): this algorithm converts qubits in the computational basis into the Fourier basis. This is commonly used as a sub-step within other algorithms.
 #
 # You may provide the number of qubits to perform the QFT on using numQubits. Note that the qubits involved must be sequential and ordered from least significant (lowest index) to most significant (highest index). To perform QFT on all qubits within the circuit, you may leave this argument as the default, and the function will get the number of qubits in the circuit.
-def QFT(circuit, numQubits=0):
+def QFT(circuit, algQubits=None):
 
-    # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
-    if numQubits == 0:
-        numQubits = circuit.numQubits
-    else:
-        pass
+    # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+    if algQubits == None:
+        algQubits = list(range(circuit.numQubits))
+    numQubits = len(algQubits)
 
     # Start with the most significant qubit. Apply an H gate to convert the qubit into the Fourier basis. Turn the qubit the appropriate angle using controlled-P gates. Apply controlled-P gates with the current qubit as the target and all other qubits with lower index as control qubits. Theta starts at pi/2^n, where 'n' is the number of controlled-P gates to be applied to the target, and is doubled with each successive controlled-P gate applied to the target, ending at pi/2.
-    for qubit in range(numQubits-1, -1, -1):
+    for qubit in range(numQubits-1, algQubits[0]-1, -1):
         circuit.H(qubit)
         for control in range(qubit):
             circuit.CP([control], qubit, theta=np.pi/2**(qubit-control))
 
     # Swap the qubit order. Conversion between the computational and Fourier bases reverses the qubit order of significance.
-    for qubit in range(numQubits):
 
-        # If there is only one unswapped qubit left in the circuit, this qubit's position in the order will not change. End the loop.
-        if qubit == numQubits-qubit-1:
+    # First, create a list of the qubit indices reversed.
+    reversedQubits = list(reversed(algQubits))
+
+    # Loop over the qubits to match up each qubit with its SWAP partner.
+    for Qidx, qubit in enumerate(algQubits):
+
+        # If current qubit's index is greater than the qubit's index from the reversed list, all qubits have been swapped. If the current qubit's index equals the qubit's index in the reversed list, this qubit will not have its order changed. For both cases, all SWAPs have been completed, so end the loop.
+        if qubit >= reversedQubits[Qidx]:
             break
 
-        # If the qubit number exceeds half the total number of qubits, all qubits have now been swapped. End the loop.
-        if qubit >= 0.5*numQubits:
-            break
-
-        # Swap the current qubit with the last unswapped qubit.
-        circuit.SWAP(qubit, numQubits-qubit-1)
+        # Swap the current qubit with the last unswapped qubit (which will have the same list index as the algQubits list).
+        circuit.SWAP(qubit, reversedQubits[Qidx])
     
     return
 
@@ -138,29 +138,29 @@ def IQFT(circuit, algQubits=None):
 # The angle lambd = 2pi*theta must be passed as an argument.
 #
 # You may provide the number of qubits to perform the QPE on using numPrecisionQubits. To perform QPE on all qubits within the circuit (minus the final qubit which represents |psi>), you may leave this argument as the default, and the function will get the number of qubits in the circuit.
-def QPE(circuit, lambd, numPrecisionQubits=0):
+def QPE(circuit, lambd, algQubits=None):
 
-    # If no number of precision qubits to apply the QPE are passed to the function, get the number of precision qubits in the circuit to use all of them in the algorithm.
-    if numPrecisionQubits == 0:
-        numPrecisionQubits = circuit.numQubits-1
-    else:
-        pass
+    # If no qubits are provided in algQubits, use all the qubits in the circuit.
+    if algQubits == None:
+        algQubits = list(range(circuit.numQubits))
 
-    # Initialize the |psi> qubit in the |1> state. Convert the precision qubits into the Fourier basis with H gates.
-    circuit.X(numPrecisionQubits)
-    circuit.H(range(numPrecisionQubits))
+    # Use the first n-1 qubits in algQubits as the precision qubits for the algorithm. The nth qubit will be the qubit that stores psi.
+    precisionQubits = algQubits[:-1]
+    psiQubit = algQubits[-1]
+
+    # Initialize the |psi> qubit in the |1> state.
+    circuit.X(psiQubit)
+
+    # Convert the precision qubits into the Fourier basis with H gates.
+    circuit.H(precisionQubits)
 
     # Turn the |psi> qubit using each precision qubit as the control in controlled-P gates. The angle for each turn is lambd = 2pi*theta. For each precision qubit, apply 2^n controlled-P gates, where n is the index of the precision qubit.
-    for control in range(numPrecisionQubits):
+    for control in precisionQubits:
         for repeat in range(2**control):
-                circuit.CP([control], numPrecisionQubits, lambd)
-
-    circuit.barrier()
+                circuit.CP([control], psiQubit, lambd)
 
     # Apply the inverse QFT to the precision qubits to convert them back into the computational basis.
-    circuit.IQFT(numQubits=numPrecisionQubits)
-
-    circuit.barrier()
+    circuit.IQFT(algQubits=precisionQubits)
 
     return
 
