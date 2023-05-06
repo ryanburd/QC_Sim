@@ -651,7 +651,7 @@ class Circuit:
 
             # Create the box object with appropriate style parameters. Since this is not a connection, leave the arrow properties blank.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
-            arrowProps=dict()
+            arrowprops=dict()
 
         # Rotation gates
         elif gate in {'RX', 'RY', 'RZ'}:
@@ -677,7 +677,7 @@ class Circuit:
 
             # Create the box object with appropriate style parameters. Since this is not a connection, leave the arrow properties blank.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
-            arrowProps=dict()
+            arrowprops=dict()
 
         # U gates
         elif gate == 'U':
@@ -708,7 +708,7 @@ class Circuit:
 
             # Create the box object with appropriate style parameters. Since this is not a connection, leave the arrow properties blank.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='white', ec='black', zorder=zorder)
-            arrowProps=dict()
+            arrowprops=dict()
 
         # SWAP gates
         elif gate == 'SWAP':
@@ -724,16 +724,16 @@ class Circuit:
 
             # Create the box object with appropriate style parameters. Use a solid black line for the connection to the swapped qubit.
             gateBox = Rectangle(gateXY, gateWidth, gateHeight, fc='none', ec='none', zorder=zorder)
-            arrowProps=dict(arrowstyle="-", edgecolor='black', linewidth=2)
+            arrowprops=dict(arrowstyle="-", edgecolor='black', linewidth=2)
 
         # Controls in controlled-gates
         elif gate == 'C':
 
             # Gate label: blank. A filled circle with the specified size will be used as the operation symbol. The symbol width and height are the same since the symbol is a circle.
             gateLabel = ' '
-            size = 8
-            symWidth = size
-            symHeight = size
+            textSize = 8
+            symWidth = textSize
+            symHeight = textSize
 
             # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
             gateXY, gateWidth, gateHeight = self.gate_size(xy, symWidth, symHeight, ax)
@@ -747,9 +747,9 @@ class Circuit:
 
             # Gate label: blank. An empty circle with the specified size will be used as the operation symbol. The symbol width and height are the same since the symbol is a circle.
             gateLabel = ' '
-            size = 12
-            symWidth = size
-            symHeight = size
+            textSize = 12
+            symWidth = textSize
+            symHeight = textSize
 
             # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
             gateXY, gateWidth, gateHeight = self.gate_size(xy, symWidth, symHeight, ax)
@@ -763,9 +763,9 @@ class Circuit:
 
             # Gate label: blank. A grey box spanning all the qubits will be used for the barrier symbol. The barrier width and height are the same, chosen heuristically.
             gateLabel = ' '
-            size = 10
-            barrierWidth = size
-            barrierHeight = size
+            textSize = 10
+            barrierWidth = textSize
+            barrierHeight = textSize
 
             # Get the gate coordinates, width, and height in data coordinates using the function gate_size.
             gateXY, gateWidth, gateHeight = self.gate_size(xy, barrierWidth, barrierHeight, ax)
@@ -802,7 +802,7 @@ class Circuit:
         boxHeight = textSize
 
         # Get the algorithm box coordinates, width, and height in data coordinates using the function gate_size.
-        algXY, algWidth, algHeight = self.gate_size(xy, sizeX, sizeY, ax)
+        algXY, algWidth, algHeight = self.gate_size(xy, boxWidth, boxHeight, ax)
 
         # Create the box object with appropriate style parameters. Since algHeight would assume only one qubit has the barrier, add the total number of qubits involved in the algorithm (-1 since algHeight already includes one qubit) to stretch the box over all qubits involved. Since this is not a connection, leave the arrow properties blank.
         algBox = Rectangle(algXY, algWidth, algHeight+numQubits-1, fc='white', ec='black', zorder=zorder)
@@ -885,7 +885,7 @@ class Circuit:
                         algNumQubits = qubit.algNumQubits[Aidx]
 
                         # Format the algorithm box using format_algorithm. Add gateBox as a patch.
-                        [gateLabel, textSize, arrowProps, gateBox] = self.format_algorithm(alg, algNumQubits, xy, ax, zorder)
+                        [gateLabel, textSize, arrowprops, gateBox] = self.format_algorithm(alg, algNumQubits, xy, ax, zorder)
                         ax.add_patch(gateBox)
 
                         # Add the gate label as an annotation over the box. To center the label vertically, find the mean of the first and last qubit involved in the algorithm and negate the result.
@@ -907,11 +907,11 @@ class Circuit:
                         connectTo = qubit.connectTo[Cidx]
 
                         # Format the connection symbol using format_gate. Add connectSym as a patch.
-                        [connectLabel, textSize, arrowProps, connectSym] = self.format_gate(connection, xy, ax, zorder)
+                        [connectLabel, textSize, arrowprops, connectSym] = self.format_gate(connection, xy, ax, zorder)
                         ax.add_patch(connectSym)
 
                         # Add the connection label and connector as an annotation. xy = position of the target; xytext = position of the connection symbol.
-                        ax.annotate(connectLabel, xy=(position, -1*connectTo), xytext=xy, size=textSize, va='center', ha='center', arrowprops=arrowProps, zorder=zorder)
+                        ax.annotate(connectLabel, xy=(position, -1*connectTo), xytext=xy, size=textSize, va='center', ha='center', arrowprops=arrowprops, zorder=zorder)
 
                         # Increase the zorder back to the gate layer.
                         zorder += 1
@@ -994,7 +994,7 @@ class Circuit:
                 if lastPos > circuitLength:
                     circuitLength = lastPos
 
-        # For the gates, create a matrix of I's with circuitLength rows and numQubits columns. Update the matrix with the gates and connections applied to each qubit, placing the gate in the corresponding qubit's column and the row of the circuit position where the gate/connection is applied. Do the same for the angles of each gate (only non-empty lists for rotation matrices)
+        # For the gates, create a matrix of I's with circuitLength rows and numQubits columns. Update the matrix with the gates and connections applied to each qubit, placing the gate in the corresponding qubit's column and the row of the circuit position where the gate/connection is applied. Do the same for the angles of each gate.
         qubit_gates = [['I' for qubit in self.qubits] for pos in range(circuitLength)]
         gate_angles = [[[] for qubit in self.qubits] for pos in range(circuitLength)]
         for Qidx, qubit in enumerate(self.qubits):
@@ -1007,102 +1007,166 @@ class Circuit:
                 # Subtract 1 since plotted gate positions start at 1 but Python indexing starts at 0
                 connectPos = qubit.connectPos[Cidx] - 1
                 qubit_gates[connectPos][Qidx] = connection
-        
-        # Create an empty list of results with size equal to the total number of shots. Repeat the circuit's gates applications and measurements for each shot, storing the result from each shot in the list 'results'
+
+        # Store for initial state of the circuit (usually |0> for each qubit) to reset the circuit state at the start of each shot.
+        initialState = self.state
+
+        # Create an empty list of results with size equal to the total number of shots. Repeat the circuit's gate applications and measurements for each shot, storing the result from each shot in the list 'results'.
         results = ['']*shots
-        originalState = self.state
         for shot in range(shots):
 
-            self.state = originalState
+            # Reset the circuit state
+            self.state = initialState
 
+            # Loop over each circuit position, creating the Kronecker matrix using all the gates at the position and applying it to the current circuit state (self.state).
             for pos in range(circuitLength):
 
-                # Get the next circuit position's list of gates
+                # Get the current position's list of gates.
                 gates = qubit_gates[pos]
 
-                # Skip over barriers since they do not change the circuit's state
+                # Skip over barriers since they do not change the circuit's state. Go to the next circuit position.
                 if gates[-1] == 'B':
                     continue
+
+                # Skip over algorithm indicators since they are only used for displaying the circuit. The actual gates within the algorithm start at the next circuit position. Go to the next position.
                 if 'IQFT' in gates[-1]:
                     continue
 
-                # For controlled gates:
+                # If there is a controlled gate within the current position:
                 if 'C' in gates:
-                    # 
-                    numControls = gates.count('C')
-                    numOutcomes = 2**numControls
-                    Coutcomes = [np.array([1]) for outcome in range(numOutcomes)]
-                    outcomeCombos = CartesianProduct([0, 1], repeat=numControls)
-                    outcomeCombos = [list(outcome) for outcome in outcomeCombos]
 
+                    # Get the number of control qubits for the controlled gate.
+                    numControls = gates.count('C')
+
+                    # To calculate the matrix that represents a controlled gate, we have to calculate a Kronecker matrix for each possible combination of controlled qubit outcomes and then sum the matrices. These Kronecker matrices are calculated from the projection matrices into either the |0> or |1> state for each control qubit and the target's intended gate if all control qubits are projected into the |1> state (identity matrix otherwise).
+
+                    # If there are numControls control qubits that can each be measured in either the |0> or |1> state, then there are 2**numControls different outcomes for the controlled gate. Create a list that will contain the Kronecker matrix for each possible outcome.
+                    numOutcomes = 2**numControls
+                    outcomeKroneckers = [np.array([1]) for outcome in range(numOutcomes)]
+
+                    # Each Kronecker matrix within outcomeKroneckers is associated with a unique combination of control qubit measurement outcomes. Create a list of each combination of control qubit outcomes using the Cartesian product. E.g. if there are 2 control qubits, the list would contain: '00', '01', '10', '11'
+                    controlOutcomeCombos = CartesianProduct([0, 1], repeat=numControls)
+                    controlOutcomeCombos = [list(outcome) for outcome in controlOutcomeCombos]
+
+                    # Within each combo in the list controlOutcomeCombos, the first number represents the outcome for the first control qubit, the second number for the second control qubit, etc. To keep track of which index to use for each control qubit, the variable controlNum will track how many control qubits we have already encountered for the current controlled gate. The variable starts at 0 so that the first control qubit will use index 0, and the variable will be incremented every time a control qubit is encountered.
                     controlNum = 0
+
+                    # Loop over each qubit to get its gate for the current circuit position.
                     for Qidx, qubit in enumerate(self.qubits):
+
+                        # Get the gate type and the angles for it (for phase and rotation gates).
                         gateType = gates[Qidx]
                         angles = gate_angles[pos][Qidx]
 
+                        # If the qubit is a control:
                         if gateType == 'C':
+
+                            # Loop over the different control qubit outcome combinations. The variable idx will track which matrix within outcomeKroneckers to apply the current qubit's projection matrix to.
                             idx = 0
-                            for combo in outcomeCombos:
+                            for combo in controlOutcomeCombos:
+
+                                # Get the outcome within the current combo for the current control qubit. Use controlNum as the index (see explanation of controlNum above).
                                 outcome = combo[controlNum]
+
+                                # For an outcome of 0 for the current control qubit, use the projection into |0> for the Kronecker matrix.
                                 if outcome == 0:
-                                    Coutcomes[idx] = np.kron(gateMatrix('P0'), Coutcomes[idx])
+                                    outcomeKroneckers[idx] = np.kron(gateMatrix('P0'), outcomeKroneckers[idx])
+                                
+                                # For an outcome of 1 for the current control qubit, use the projection into |1> for the Kronecker matrix.
                                 else: # outcome == 1
-                                    Coutcomes[idx] = np.kron(gateMatrix('P1'), Coutcomes[idx])
+                                    outcomeKroneckers[idx] = np.kron(gateMatrix('P1'), outcomeKroneckers[idx])
+
+                                # Increment idx so that the projection matrix for the next combo in controlOutcomeCombo will be applied to the next matrix within outcomeKroneckers.
                                 idx += 1
+
+                            # The current control qubit is done, so increment controlNum so that the next control qubit encountered will use the next index within each combo in controlOutcomeCombo.
                             controlNum += 1
 
+                        # If the gate type is not a control or an identity, this is the target qubit.
                         elif gateType != 'I':
+
+                            # Loop over the possible outcome combinations of the control qubits.
                             idx = 0
-                            for combo in outcomeCombos:
+                            for combo in controlOutcomeCombos:
+
+                                # If all control qubits measure |1> within the current combo, apply the intended target gate to the corresponding matrix within outcomeKroneckers.
                                 if all(combo):
-                                    Coutcomes[idx] = np.kron(gateMatrix(gateType, angles), Coutcomes[idx])
+                                    outcomeKroneckers[idx] = np.kron(gateMatrix(gateType, angles), outcomeKroneckers[idx])
+                                
+                                # Otherwise, when at least one control qubit measures to 0, apply the identity matrix.
                                 else:
-                                    Coutcomes[idx] = np.kron(gateMatrix('I'), Coutcomes[idx])
+                                    outcomeKroneckers[idx] = np.kron(gateMatrix('I'), outcomeKroneckers[idx])
+
+                                # Go to the next matrix within outcomeKroneckers.
                                 idx += 1
 
-                        else: # gateType == 'I'
+                        # For all other qubits in the circuit that are not involved within the controlled gate, apply an identity matrix to each matrix within outcomeKroneckers.
+                        else:
                             idx = 0
-                            for combo in outcomeCombos:
-                                Coutcomes[idx] = np.kron(gateMatrix('I'), Coutcomes[idx])
+                            for combo in controlOutcomeCombos:
+                                outcomeKroneckers[idx] = np.kron(gateMatrix('I'), outcomeKroneckers[idx])
                                 idx += 1
 
-                    kronMatrix = np.sum(Coutcomes, axis=0)
+                    # With the Kronecker matrix for each combination of control qubit outcomes calculated, sum the matrices to get the final matrix that represents the operation of the controlled gate.
+                    kronMatrix = np.sum(outcomeKroneckers, axis=0)
                 
                 # For SWAP gates:
                 elif 'SWAP' in gates:
-                    # Create the Kronecker product matrix defining the gate operations. First create 3 separate matrices for the two target qubits to receive X, Y, and Z gates together. All other qubits get an identity. Then add the 3 matrices along with an identity and divide the sum by 2.
+                    
+                    # SWAP gates can be decomposed into 1/2 the sum of Kronecker matrices that apply an identity to each qubit, an X gate to each qubit, a Y gate to each qubit, and a Z gate to each qubit.
+
+                    # Create 3 separate Kronecker matrices for the two target qubits to receive X, Y, and Z gates together. All other qubits will get an identity.
                     kronXMatrix = np.array([1])
                     kronYMatrix = np.array([1])
                     kronZMatrix = np.array([1])
+
                     for Qidx, qubit in enumerate(self.qubits):
+                        
+                        # For each qubit, get the gate type.
                         gateType = gates[Qidx]
+
+                        # For SWAP gates, apply an X, Y, and Z gate to the corresponding Kronecker matrix.
                         if gateType == 'SWAP':
                             kronXMatrix = np.kron(gateMatrix('X'), kronXMatrix)
                             kronYMatrix = np.kron(gateMatrix('Y'), kronYMatrix)
                             kronZMatrix = np.kron(gateMatrix('Z'), kronZMatrix)
-                        else: # gateType == 'I'
+                        
+                        # Otherwise, the gate type will be an identity. Apply the identity to all 3 Kronecker matrices.
+                        else:
                             kronXMatrix = np.kron(gateMatrix('I'), kronXMatrix)
                             kronYMatrix = np.kron(gateMatrix('I'), kronYMatrix)
                             kronZMatrix = np.kron(gateMatrix('I'), kronZMatrix)
+                    
+                    # Add the 3 Kronecker matrices to an identity matrix of the same size and take 1/2 the sum. This is the final matrix that represents the SWAP gate operation.
                     kronMatrix = 0.5*(np.eye(np.size(kronXMatrix, 0)) + kronXMatrix + kronYMatrix + kronZMatrix)
                 
                 # For measurements (in computational basis):
                 elif 'M' in gates:
-                    # Create 2 Kronecker product matrices for the projection of the target qubit into the 0 or 1 state. All other qubits get an identity.
+
+                    # Create 2 Kronecker product matrices for the projection of the target qubit into the |0> or |1> state. All other qubits will get an identity.
                     kron0Matrix = np.array([1])
                     kron1Matrix = np.array([1])
+
                     measuredQubit = 0
                     for Qidx, qubit in enumerate(self.qubits):
+
+                        # For each qubit, get the gate type.
                         gateType = gates[Qidx]
+
+                        # For measurements, apply the projection matrix into |0> and |1> to the corresponding Kronecker matrix.
                         if gateType == 'M':
                             kron0Matrix = np.kron(gateMatrix('P0'), kron0Matrix)
                             kron1Matrix = np.kron(gateMatrix('P1'), kron1Matrix)
+
+                            # Store the index of the qubit being measured in measuredQubit.
                             measuredQubit = Qidx
-                        else: # gateType == 'I'
+                        
+                        # Otherwise, the gate type is an identity. Apply an identity to each Kronecker matrix.
+                        else:
                             kron0Matrix = np.kron(gateMatrix('I'), kron0Matrix)
                             kron1Matrix = np.kron(gateMatrix('I'), kron1Matrix)
                     
-                    # For each of the 0 and 1 state projection matrices, apply the projection to the circuit's current state to get the resulting state. Transpose the circuit's current state (without the projection) and apply it to the resulting state (with the projection) to get the probability of the measurement outcome.
+                    # For each of the |0> and |1> state projection matrices, apply the projection to the circuit's current state to get the resulting state. Transpose the circuit's current state (without the projection) and apply it to the resulting state (with the projection) to get the probability of the measurement outcome.
                     state0 = np.dot(kron0Matrix, self.state)
                     prob0 = np.vdot(state0, state0)
                     state1 = np.dot(kron1Matrix, self.state)
@@ -1118,35 +1182,57 @@ class Circuit:
 
                 # For single qubit gates:
                 else:
+
                     #  Create the Kronecker product matrix defining the gate operations.
                     kronMatrix = np.array([1])
+
                     for Qidx, qubit in enumerate(self.qubits):
+
+                        # Get the gate type.
                         gateType = gates[Qidx]
+
+                        # For phase and rotation gates, get the angles needed to define the gate and apply the gate to the Kronecker matrix.
                         if gateType in {'P', 'RX', 'RY', 'RZ', 'U'}:
                             angles = gate_angles[pos][Qidx]
                             kronMatrix = np.kron(gateMatrix(gateType, angles), kronMatrix)
+                        
+                        # Other gates don't need angles and can be applied to the Kronecker matrix.
                         else:
                             kronMatrix = np.kron(gateMatrix(gateType), kronMatrix)
                 
-                # The measurement operation above changes the circuit's state with the elif statement. If the current circuit position does not contain a measurement, apply the gates to the circuit's state, updating the state.
+                # The measurement operation above changes the circuit's state within the elif statement. If the current circuit position does not contain a measurement, apply the gates to the circuit's state, updating the state.
                 if 'M' not in gates:
                     self.state = np.dot(kronMatrix, self.state)
 
+            # Create a string containing the classical bit states at the end of the circuit. Reverse the bit order so bit 0 is on the far right. Style the list as a ket since thise is the state of the qubits, despite being stored in the classical bits.
             result = ''.join(reversed([str(cbit.state) for cbit in self.cbits]))
-            # Reverse the bit order so bit 0 is on the far right
             result = '|' + result + '>'
+
+            # Store the current result in the 'shot' index in the list of all results.
             results[shot] = result
 
+        # If you want to create a histogram of your results:
         if hist:
+
+            # Create a list 'labels' that contains each unique final circuit state within the list of all results. Get the number of times each unique state was obtained and store in the list 'counts'.
             labels, counts = np.unique(results, return_counts=True)
+
+            # Create a bar graph of the unique states with the number of counts of each state normalized to the total number of shots taken for the circuit. The bar graph thus gives the percent chance of obtaining each unique state.
             plt.bar(labels, counts/shots, align='center')
+
+            # Apply labels to the graph and axes.
             plt.title('Histogram of results of %i shots of the quantum circuit'%shots)
             plt.xlabel('Quantum circuit state')
+            plt.ylabel('Probability')
+
+            # Use the circuit states stored in 'labels' as the x-axis labels for the bars. Rotate the labels to prevent overlap.
             plt.xticks(rotation=45)
             plt.gca().set_xticks(labels)
-            plt.ylabel('Probability')
+            
+            # Display the histogram.
             plt.show()
 
+        # Return the list of results for further computation, if needed.
         return results
 
 def main():
