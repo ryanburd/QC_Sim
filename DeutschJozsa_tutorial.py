@@ -2,8 +2,8 @@
 
 ################################################################################
 
-# Import the QPU simulator which creates the quantum circuit and contains all gate operations. Import DeutschJozsa from Algorithms if you want to access the algorithm directly, rather than through QPUsimulator. Note this is only a syntax difference when calling the algorithm; the circuit operation will be exactly the same for either method.
-
+# Import the QPU simulator which creates the quantum circuit and contains all gate operations.
+# Import DeutschJozsa from Algorithms if you want to access the algorithm directly, rather than through QPUsimulator. Computationally, using the algorithm through Simulator.py or Algorithms.py is the same. When displaying the circuit, Simulator.py simplifies the diagram to show a general "DJ" block over all the qubits involved to represent the algorithm; Algorithms.py shows all the individual gates completed in the algorithm.
 import Simulator as QPU
 from Algorithms import DeutschJozsa
 
@@ -11,22 +11,21 @@ from Algorithms import DeutschJozsa
 numInputQubits = 3
 circuit = QPU.Circuit(numInputQubits+1)
 
-# To use your own oracle, define the oracle as a python function taking only the circuit as an argument. Be sure your oracle is either constant or balanced! For this tutorial, a balanced oracle will be used. (See Algorithms for an example of a constant oracle.)
-def tutorialOracle(circuit):
+# To use your own oracle, define the oracle as a python function taking only the circuit as an argument. Be sure your oracle is either constant or balanced! For this tutorial, a balanced oracle will be used. (See Algorithms.py for an example of a constant oracle.)
+def tutorialOracle(circuit, algQubits=None):
 
-    numQubits = circuit.numQubits
+    # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+    if algQubits == None:
+        algQubits = list(range(circuit.numQubits))
+    numQubits = len(algQubits)
 
     # Select input qubits that will be flipped before applying controlled-X gates.
     inputFlips = [0, 1]
     circuit.X(inputFlips)
 
-    circuit.barrier()
-
     # Apply controlled-X gates from each input qubit to the output qubit as the target.
-    for control in range(numQubits-1):
-        circuit.CX([control], numQubits-1)
-
-    circuit.barrier()
+    for control in algQubits[:-1]:
+        circuit.CX([control], algQubits[-1])
 
     # Undo the input qubit flips.
     circuit.X(inputFlips)
@@ -34,7 +33,7 @@ def tutorialOracle(circuit):
     return
 
 # To apply the algorithm to your circuit, you can apply it just as you would a qubit gate. Pass the function containing your oracle as the 'oracle' argument.
-circuit.DeutschJozsa(oracle=tutorialOracle)
+circuit.DeutschJozsa(oracle=tutorialOracle, oracleType='balanced')
 
 # Measure each input qubit. For constant oracles, all inputs should measure |0> vs all |1>'s for balanced oracles.
 for qubit in range(numInputQubits):
@@ -78,7 +77,8 @@ circuit.display_circuit()
 shots = 1024
 results = circuit.run(shots, hist=True)
 
-# You can apply the algorithm using any oracle by accessing Algorithms.py directly if it is imported. In this case, pass the circuit as the first argument to the DeutschJozsa function. For circuit operations, this is identical to applying the algorithm using the gate syntax used above. Only the syntax for calling the algorithm changes. Use whichever syntax is more intuitive to you.
+# If you would like to see all the gates performed by the algorithm, apply the DeutschJozsa directly through Algorithms.py. Note: the function DeutschJozsa was imported from Algorithms.py above, so we can use this function directly now.
+# Computatinally, this method and the method above are exactly the same.
 numInputQubits = 3
 circuit = QPU.Circuit(numInputQubits+1)
 

@@ -4,27 +4,23 @@ import Simulator
 import numpy as np
 
 # An example constant oracle for use in the Deutsch-Jozsa algorithm. The constant output of 0 or 1 can be specified with the 'output' argument, which has 0 as default. All inputs should be measured in the |0> state.
-def constantOracle(circuit, numQubits, output):
+def constantOracle(circuit, outputQubit, output):
 
     # If the desired constant output from the oracle is 1, apply an X gate to the output qubit.
     if output == 1:
-        circuit.X(numQubits-1)
+        circuit.X(outputQubit)
 
     return
 
 # An example balanced oracle for use in the Deutsch-Jozsa algorithm. The set of inputs yielding 0 vs 1 can be changed by flipping the states of any of the input qubits using the 'inputFlips' argument. All inputs should be measured in the |1> state.
-def balancedOracle(circuit, numQubits, inputFlips=[]):
+def balancedOracle(circuit, algQubits, inputFlips=[]):
 
     # Apply X gates to select input qubits to change which set of inputs result in an output=0 (and vice versa for output=1)
     circuit.X(inputFlips)
 
-    circuit.barrier()
-
     # Apply controlled-X gates for each input qubit acting as a single control for the target (output qubit)
-    for control in range(numQubits-1):
-        circuit.CX([control], numQubits-1)
-
-    circuit.barrier()
+    for control in algQubits[:-1]:
+        circuit.CX([control], algQubits[-1])
 
     # Reapply the X gates on the select input qubits from above
     circuit.X(inputFlips)
@@ -40,30 +36,33 @@ def balancedOracle(circuit, numQubits, inputFlips=[]):
 # For the example constant oracle, the constant output of 0 or 1 can be specified with the 'constantOracleOutput' argument, which has 0 as default.
 #
 # For the example balanced oracle, the set of inputs yielding 0 vs 1 can be changed by flipping the states of any of the input qubits using the 'balancedInputFlips' argument.
-def DeutschJozsa(circuit, oracle, constantOracleOutput=0, balancedInputFlips=[]):
+def DeutschJozsa(circuit, oracle, oracleType='', algQubits=None, constantOracleOutput=0, balancedInputFlips=[]):
 
-    numQubits = circuit.numQubits
-
-    circuit.barrier()
+    # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+    if algQubits == None:
+        algQubits = list(range(circuit.numQubits))
+    numQubits = len(algQubits)
 
     # Apply an X gate to the output qubit. Then apply H gates to all qubits. This will initialize all input qubits in the |+> state and the output qubit in the |-> state.
-    circuit.X(numQubits-1)
-    for Qidx in range(numQubits):
+    circuit.X(algQubits[-1])
+    for Qidx in algQubits:
         circuit.H(Qidx)
+
+    circuit.barrier()
 
     # Apply the oracle specified when calling the algorithm function. Pass the appropriate arguments.
     if oracle == 'balanced':
-        balancedOracle(circuit, numQubits, balancedInputFlips)
+        balancedOracle(circuit, algQubits, balancedInputFlips)
     elif oracle == 'constant':
-        constantOracle(circuit, numQubits, constantOracleOutput)
+        constantOracle(circuit, algQubits[-1], constantOracleOutput)
     else:
         oracle(circuit)
+    
+    circuit.barrier()
 
     # Apply H gates to all input qubits to put the back in the computational basis.
-    for Qidx in range(numQubits-1):
+    for Qidx in algQubits[:-1]:
         circuit.H(Qidx)
-
-    circuit.barrier()
 
     return
 
@@ -172,16 +171,14 @@ def expGroverOracle(circuit):
 
     return
 
-def Grover(circuit, numQubits=0, oracle='example'):
+def Grover(circuit, oracle='example', algQubits=None):
 
-    # If no number of qubits to apply the QFT are passed to the function, get the number of qubits in the circuit to use all of them in the algorithm.
-    if numQubits == 0:
-        numQubits = circuit.numQubits
-    else:
-        pass
+    # If no qubits are provided in algQubits, use all the qubits in the circuit.
+    if algQubits == None:
+        algQubits = list(range(circuit.numQubits))
 
     # Apply Hadamard gates to each qubit to create a superposition of all possible states.
-    circuit.H(range(numQubits))
+    circuit.H(algQubits)
 
     circuit.barrier()
 
@@ -195,13 +192,11 @@ def Grover(circuit, numQubits=0, oracle='example'):
     circuit.barrier()
 
     # Amplify the marked states. Apply a Hadamard and Pauli X gate to each qubit. Then control a Z gate on the last qubit with all remaining qubits acting as controls for the one Z gate. Apply a Pauli X and Hadamard gate to each qubit.
-    circuit.H(range(numQubits))
-    circuit.X(range(numQubits))
-    circuit.CZ(range(numQubits-1), numQubits-1)
-    circuit.X(range(numQubits))
-    circuit.H(range(numQubits))
-
-    circuit.barrier()
+    circuit.H(algQubits)
+    circuit.X(algQubits)
+    circuit.CZ(algQubits[:-1], algQubits[-1])
+    circuit.X(algQubits)
+    circuit.H(algQubits)
 
     return
 

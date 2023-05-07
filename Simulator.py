@@ -316,8 +316,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
     
@@ -338,8 +338,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
     
@@ -360,8 +360,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
     
@@ -382,8 +382,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
 
@@ -404,8 +404,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
 
@@ -426,8 +426,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
 
@@ -448,8 +448,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
 
@@ -470,8 +470,8 @@ class Circuit:
         self.qubits[target].gatePos.append(position)
         for control in controls:
             self.qubits[control].connectPos.append(position)
-        for Qidx in range(min(min(controls), target), max(max(controls), target)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
 
@@ -490,8 +490,8 @@ class Circuit:
         position = max(earliestPositions)
         self.qubits[target2].gatePos.append(position)
         self.qubits[target1].connectPos.append(position)
-        for Qidx in range(min(target1, target2), max(target1, target2)+1):
-            self.qubits[Qidx].earliestPos = position + 1
+        for qubit in self.qubits:
+            qubit.earliestPos = position + 1
 
         return self
     
@@ -545,8 +545,40 @@ class Circuit:
     # While not an interesting algorithm from a practical perspective, this algorithm does show that certain problems can be completed much more efficiently on a quanutm computer than a classical computer. On a classical computer, it would take 2^(n-1)+1 shots to identify the oracle as constant or balanced with 100% accuracy, with n being the number of inputs (x's) to the oracle.
     #
     # See Algorithms.py to learn how to use an example oracle, or create your own constant or balanced oracle and pass it to 'oracle' as a python function.
-    def DeutschJozsa(self, oracle, constantOracleOutput=0, balancedInputFlips=[]):
-        Algorithms.DeutschJozsa(self, oracle, constantOracleOutput, balancedInputFlips)
+    def DeutschJozsa(self, oracle, oracleType='', algQubits=None, constantOracleOutput=0, balancedInputFlips=[]):
+
+        # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+        if algQubits == None:
+            algQubits = list(range(self.numQubits))
+        numQubits = len(algQubits)
+
+        # If the example oracles are used, there is no need to supply oracleType when calling the function since it will be the same as oracle.
+        if oracle == 'constant':
+            oracleType = 'constant'
+        elif oracle == 'balanced':
+            oracleType = 'balanced'
+
+        # Use the highest index qubit as the algorithm tracker. Append the algorithm type, qubit indices involved, and number of qubits involved to the lists for the tracker.
+        algTracker = max(algQubits)
+        self.qubits[algTracker].algorithms.append('DJ\n%s'%oracleType)
+        self.qubits[algTracker].algQubits.append(algQubits)
+        self.qubits[algTracker].algNumQubits.append(numQubits)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the starting point for the algorithm. Append this value to algStart for the tracker. Increase the earliest position for all qubits in the circuit to the algStart + 1.
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[algTracker].algStart.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
+        # Apply the algorithn.
+        Algorithms.DeutschJozsa(self, oracle, oracleType, algQubits, constantOracleOutput, balancedInputFlips)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the end point for the algorithm. Append this value to algEnd for the tracker. Increase the earliest position for all qubits in the circuit to the algEnd + 1.
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[algTracker].algEnd.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
         return
     
     # Quantum Fourier Transform (QFT): this algorithm converts qubits in the computational basis into the Fourier basis. This is commonly used as a sub-step within other algorithms.
@@ -650,8 +682,34 @@ class Circuit:
         
         return
     
-    def Grover(self, numQubits=0, oracle='example'):
-        Algorithms.Grover(self, numQubits, oracle)
+    def Grover(self, oracle='example', algQubits=None):
+
+        # If no qubits are provided in algQubits, use all the qubits in the circuit. Set numQubits as the length of the qubits involved.
+        if algQubits == None:
+            algQubits = list(range(self.numQubits))
+        numQubits = len(algQubits)
+
+        # Use the highest index qubit as the algorithm tracker. Append the algorithm type, qubit indices involved, and number of qubits involved to the lists for the tracker.
+        algTracker = max(algQubits)
+        self.qubits[algTracker].algorithms.append('Grover')
+        self.qubits[algTracker].algQubits.append(algQubits)
+        self.qubits[algTracker].algNumQubits.append(numQubits)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the starting point for the algorithm. Append this value to algStart for the tracker. Increase the earliest position for all qubits in the circuit to the algStart + 1.
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[algTracker].algStart.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
+        # Apply the algorithm.
+        Algorithms.Grover(self, oracle, algQubits)
+
+        # Get the earliest position for all qubits in the circuit (not just the algorithm qubits). The max will be used as the end point for the algorithm. Append this value to algEnd for the tracker. Increase the earliest position for all qubits in the circuit to the algEnd + 1.
+        earliestPosition = max([qubit.earliestPos for qubit in self.qubits])
+        self.qubits[algTracker].algEnd.append(earliestPosition)
+        for qubit in self.qubits:
+            qubit.earliestPos = earliestPosition + 1
+
         return
 
     # Calculate the dimensions in data coordinates of the boxes used to represent gates when displaying the circuit. xy = center of the box, in data coordinates; sizeX (sizeY) = total pixel size of the box's text in the X (Y) axis, accounting for number of letters in the text (X) and number of lines of text (Y); ax = figure axis.
